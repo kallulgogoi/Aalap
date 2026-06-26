@@ -4,7 +4,15 @@ import { useState } from "react";
 import axiosInstance from "@/lib/axios";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
-import { Search, Plus, Loader2, Send, Mail, X } from "lucide-react";
+import {
+  Search as SearchIcon,
+  MessageSquarePlus,
+  Loader2,
+  Send,
+  Mail,
+  X,
+  UserRoundSearch,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -191,41 +199,55 @@ export default function NewChatDialog({ children }) {
             size="icon"
             className="text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-zinc-800 shrink-0"
           >
-            <Plus className="w-5 h-5" />
+            <MessageSquarePlus className="w-5 h-5" />
           </Button>
         )}
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+      <DialogContent className="sm:max-w-md glass-panel-strong border-white/10 text-zinc-100 rounded-[24px]">
         <DialogHeader>
-          <DialogTitle>Start New Conversation</DialogTitle>
+          <DialogTitle className="flex items-center gap-2 text-telegram">
+            <MessageSquarePlus className="w-5 h-5" />
+            Start New Conversation
+          </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSearch} className="flex items-center gap-2 mt-4">
-          <Input
-            placeholder="Search user by email..."
-            className="bg-zinc-900 border-zinc-800 focus-visible:ring-indigo-500"
-            value={emailQuery}
-            onChange={(e) => {
-              setEmailQuery(e.target.value);
-              setHasSearched(false);
-              setIsInviting(false);
-              setInviteText("");
-              setResults([]);
-            }}
-          />
-          <Button
-            type="submit"
-            disabled={loading || !emailQuery.trim()}
-            className="bg-indigo-600 hover:bg-indigo-700"
-            title="Search user"
-          >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
-          </Button>
+        <form onSubmit={handleSearch} className="mt-4">
+          <div className="relative">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-telegram-soft flex items-center justify-center pointer-events-none">
+              <UserRoundSearch
+                className="w-4 h-4 text-telegram"
+                strokeWidth={2}
+              />
+            </div>
+            <Input
+              placeholder="Search user by email..."
+              className="pl-12 pr-28 h-11 rounded-full premium-input"
+              value={emailQuery}
+              onChange={(e) => {
+                setEmailQuery(e.target.value);
+                setHasSearched(false);
+                setIsInviting(false);
+                setInviteText("");
+                setResults([]);
+              }}
+            />
+            <Button
+              type="submit"
+              disabled={loading || !emailQuery.trim()}
+              className="absolute right-1.5 top-1/2 -translate-y-1/2 h-8 px-3 rounded-full btn-telegram text-sm"
+              title="Search user"
+            >
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <SearchIcon className="w-4 h-4 mr-1.5" />
+                  Search
+                </>
+              )}
+            </Button>
+          </div>
         </form>
 
         <div className="mt-4 space-y-2 max-h-[300px] overflow-y-auto">
@@ -237,7 +259,7 @@ export default function NewChatDialog({ children }) {
               <Button
                 onClick={() => setIsInviting(true)}
                 variant="outline"
-                className="border-indigo-600 text-indigo-400 hover:bg-indigo-600/10 w-full"
+                className="border-telegram text-telegram hover:bg-telegram-soft w-full rounded-full"
               >
                 <Mail className="w-4 h-4 mr-2" />
                 Send Invite
@@ -277,7 +299,7 @@ export default function NewChatDialog({ children }) {
                 <Button
                   onClick={handleSendInvite}
                   disabled={loading}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="flex-1 rounded-full btn-telegram"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />

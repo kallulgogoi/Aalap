@@ -15,7 +15,7 @@ import {
   Video,
   Info,
   Pin,
-  Search,
+  Search as SearchIcon,
   Menu,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function ChatArea() {
+import { MessageListSkeleton } from "@/components/ui/ChatSkeleton";
+
+export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
   const {
     activeChat,
     setActiveChat,
@@ -200,9 +202,8 @@ export default function ChatArea() {
   const visibleMessages = dedupeMessages(messages);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-zinc-950 to-zinc-900 flex-1 relative w-full">
-      {/* Sticky Header with Glass Effect - Telegram Style */}
-      <div className="h-16 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-10">
+    <div className="flex flex-col h-full flex-1 relative w-full">
+      <div className="h-16 border-b border-white/5 glass-panel-strong flex items-center justify-between px-4 shrink-0 z-10">
         <div className="flex items-center gap-3">
           {/* Mobile Back Button */}
           <Button
@@ -217,7 +218,10 @@ export default function ChatArea() {
           {/* Avatar with status */}
           <div
             className="relative cursor-pointer"
-            onClick={() => setShowInfo(true)}
+            onClick={() => {
+              if (onOpenDetails) onOpenDetails();
+              else setShowInfo(true);
+            }}
           >
             <div
               className={cn(
@@ -267,9 +271,9 @@ export default function ChatArea() {
           <Button
             variant="ghost"
             size="icon"
-            className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200 hidden sm:flex"
+            className="text-zinc-400 hover:text-zinc-100 hover:bg-white/5 rounded-2xl transition-all duration-200 hidden sm:flex"
           >
-            <Search className="w-5 h-5" />
+            <SearchIcon className="w-5 h-5" />
           </Button>
           <Button
             variant="ghost"
@@ -290,25 +294,27 @@ export default function ChatArea() {
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200"
+                className="rounded-xl text-zinc-400 transition-all duration-200 hover:bg-zinc-800/50 hover:text-zinc-100"
               >
                 <MoreVertical className="w-5 h-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100 min-w-[200px]">
+
+            <DropdownMenuContent
+              align="end"
+              alignOffset={-8}
+              sideOffset={8}
+              className="min-w-[200px] rounded-xl border border-zinc-800 bg-zinc-900 p-1 text-zinc-100 shadow-2xl"
+            >
               <DropdownMenuItem
-                onClick={() => setShowInfo(true)}
-                className="hover:bg-zinc-800 cursor-pointer flex items-center gap-2"
+                onClick={() => {
+                  if (onOpenDetails) onOpenDetails();
+                  else setShowInfo(true);
+                }}
+                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 transition-colors hover:bg-white/5 focus:bg-white/5"
               >
-                <Info className="w-4 h-4" />
-                View Profile
-              </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer flex items-center gap-2">
-                <Pin className="w-4 h-4" />
-                Pin Chat
-              </DropdownMenuItem>
-              <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer flex items-center gap-2 text-red-400">
-                <span>Delete Chat</span>
+                <Info className="h-4 w-4" />
+                <span>View Profile</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -316,45 +322,43 @@ export default function ChatArea() {
       </div>
 
       {/* Scrollable Message List */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-2"
-      >
-        {isMessagesLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
-              <p className="text-sm text-zinc-500">Loading messages...</p>
+      <div className="flex-1 relative overflow-hidden chat-area-pattern">
+        <div
+          ref={scrollRef}
+          className="absolute inset-0 overflow-y-auto p-4 md:p-6 space-y-2"
+        >
+          {isMessagesLoading ? (
+            <MessageListSkeleton />
+          ) : visibleMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <div className="w-20 h-20 rounded-full bg-zinc-800/30 flex items-center justify-center mb-4 border border-zinc-700/30">
+                <Users className="w-10 h-10 text-zinc-600" />
+              </div>
+              <p className="text-zinc-400 font-medium">No messages yet</p>
+              <p className="text-sm text-zinc-500 mt-1">
+                Send a message to start the conversation!
+              </p>
             </div>
-          </div>
-        ) : visibleMessages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <div className="w-20 h-20 rounded-full bg-zinc-800/30 flex items-center justify-center mb-4 border border-zinc-700/30">
-              <Users className="w-10 h-10 text-zinc-600" />
-            </div>
-            <p className="text-zinc-400 font-medium">No messages yet</p>
-            <p className="text-sm text-zinc-500 mt-1">
-              Send a message to start the conversation!
-            </p>
-          </div>
-        ) : (
-          visibleMessages.map((msg, index) => {
-            const senderIdStr =
-              typeof msg.senderId === "object" && msg.senderId !== null
-                ? msg.senderId._id
-                : msg.senderId;
-            const isMe = senderIdStr === user?.id || senderIdStr === user?._id;
-            return (
-              <MessageBubble
-                key={normalizeMessageId(msg._id) || `msg-${index}`}
-                message={msg}
-                isMe={isMe}
-                onDelete={handleDeleteMessage}
-                onRestore={handleRestoreMessage}
-              />
-            );
-          })
-        )}
+          ) : (
+            visibleMessages.map((msg, index) => {
+              const senderIdStr =
+                typeof msg.senderId === "object" && msg.senderId !== null
+                  ? msg.senderId._id
+                  : msg.senderId;
+              const isMe =
+                senderIdStr === user?.id || senderIdStr === user?._id;
+              return (
+                <MessageBubble
+                  key={normalizeMessageId(msg._id) || `msg-${index}`}
+                  message={msg}
+                  isMe={isMe}
+                  onDelete={handleDeleteMessage}
+                  onRestore={handleRestoreMessage}
+                />
+              );
+            })
+          )}
+        </div>
       </div>
 
       {/* Input Footer Area */}
@@ -378,37 +382,37 @@ export default function ChatArea() {
         />
       )}
 
-      {/* Profile Info Dialog */}
+      {/* Profile Info Dialog - mobile / tablet only */}
       <Dialog open={showInfo} onOpenChange={setShowInfo}>
-        <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+        <DialogContent className="sm:max-w-md glass-panel-strong border-telegram text-zinc-100 xl:hidden rounded-[32px]">
           <DialogHeader>
-            <DialogTitle>Profile</DialogTitle>
+            <DialogTitle className="text-telegram">Profile</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col items-center py-4">
-            <div className="relative">
+          <div className="flex flex-col items-center py-4 px-2">
+            <div className="relative p-1 rounded-full profile-avatar-ring">
               <img
                 src={getAvatarUrl(activeChat)}
                 alt="Profile"
-                className="w-24 h-24 rounded-full object-cover border-2 border-zinc-700"
+                className="w-28 h-28 rounded-full object-cover"
               />
               {activeChat.isOnline && (
-                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-zinc-950" />
+                <span className="absolute bottom-1 right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-zinc-950" />
               )}
             </div>
-            <h3 className="text-xl font-semibold text-zinc-100 mt-4">
+            <h3 className="text-xl font-semibold text-[#FFFFFF] mt-5">
               {activeChat.chatName}
             </h3>
-            <p className="text-sm text-zinc-400 mt-1">
+            <p className="text-sm text-zinc-400 mt-2 px-4 py-1 rounded-full bg-telegram-soft">
               {activeChat.isOnline ? "Online" : "Offline"}
             </p>
             {activeChat.bio && (
-              <p className="text-sm text-zinc-300 mt-2 text-center">
+              <p className="text-sm text-zinc-300 mt-3 text-center px-5 py-3 rounded-[24px] bg-white/5 max-w-sm">
                 {activeChat.bio}
               </p>
             )}
-            <div className="w-full mt-6 pt-6 border-t border-zinc-800">
-              <div className="flex justify-around text-center">
-                <div>
+            <div className="w-full mt-6 pt-6 border-t border-white/10">
+              <div className="flex justify-around text-center gap-3">
+                <div className="flex-1 rounded-full bg-telegram-soft py-3">
                   <p className="text-2xl font-semibold text-zinc-100">
                     {
                       messages.filter((m) => {
@@ -425,7 +429,7 @@ export default function ChatArea() {
                   </p>
                   <p className="text-xs text-zinc-500">Messages</p>
                 </div>
-                <div>
+                <div className="flex-1 rounded-full bg-telegram-soft py-3">
                   <p className="text-2xl font-semibold text-zinc-100">
                     {
                       messages.filter((m) => {

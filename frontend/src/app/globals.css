@@ -4,90 +4,390 @@
 
 @layer base {
   :root {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 226 58% 39%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --background: 222 47% 5%;
+    --foreground: 0 0% 100%;
+    --card: 222 40% 8%;
+    --card-foreground: 0 0% 100%;
+    --popover: 222 40% 8%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 199 73% 51%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 222 30% 12%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 222 25% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 199 73% 18%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 226 58% 39%;
-    --radius: 0.5rem;
+    --border: 222 25% 16%;
+    --input: 222 25% 14%;
+    --ring: 199 73% 51%;
+    --radius: 1rem;
+    --telegram-blue: #24a1de;
+    --telegram-white: #ffffff;
+    --telegram-blue-alt: #0088cc;
+    --telegram-blue-rgb: 36, 161, 222;
+    --telegram-blue-alt-rgb: 0, 136, 204;
+    --brand-blue: #24a1de;
+    --brand-blue-alt: #0088cc;
+    --brand-blue-soft: rgba(36, 161, 222, 0.14);
+    --brand-blue-soft-strong: rgba(36, 161, 222, 0.22);
+    --surface-glass: rgba(12, 18, 36, 0.72);
   }
 }
 
 @layer base {
   * {
-    @apply border-zinc-800;
-  }
-  body {
-    @apply bg-zinc-950 text-zinc-100 antialiased;
+    @apply border-zinc-800/60;
   }
 
-  /* Custom scrollbar - Elegant thin design */
-  ::-webkit-scrollbar {
-    width: 5px;
-    height: 5px;
+  body {
+    @apply bg-[#070b16] text-zinc-100 antialiased;
+    font-family: var(--font-inter), system-ui, sans-serif;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
+    font-family: var(--font-jakarta), var(--font-inter), system-ui, sans-serif;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
   ::-webkit-scrollbar-track {
     background: transparent;
   }
+
   ::-webkit-scrollbar-thumb {
-    @apply bg-zinc-700 rounded-full hover:bg-zinc-600 transition-colors;
+    @apply bg-zinc-700/80 rounded-full hover:bg-zinc-600 transition-colors;
+  }
+}
+
+@layer utilities {
+  .app-bg {
+    background:
+      radial-gradient(
+        circle at 10% 10%,
+        rgba(36, 161, 222, 0.14),
+        transparent 28%
+      ),
+      radial-gradient(
+        circle at 90% 0%,
+        rgba(0, 136, 204, 0.1),
+        transparent 24%
+      ),
+      radial-gradient(
+        circle at 50% 100%,
+        rgba(36, 161, 222, 0.06),
+        transparent 30%
+      ),
+      linear-gradient(180deg, #070b16 0%, #0a1020 45%, #070b16 100%);
   }
 
-  /* Glass effect utilities */
-  .glass {
-    @apply bg-white/5 backdrop-blur-lg border border-white/10;
+  .glass-panel {
+    @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.24)];
   }
 
-  .glass-dark {
-    @apply bg-zinc-950/80 backdrop-blur-xl border border-zinc-800/50;
+  .glass-panel-strong {
+    @apply bg-[rgba(10,14,28,0.82)] backdrop-blur-2xl border border-white/[0.08] shadow-[0_12px_40px_rgba(0,0,0,0.28)];
   }
 
-  /* Gradient text utility */
-  .gradient-text {
-    @apply bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent;
+  .nav-pill {
+    @apply rounded-2xl transition-all duration-200 hover:bg-white/[0.06] text-zinc-400 hover:text-zinc-100;
   }
 
-  /* Animation utilities */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
+  .nav-pill-active {
+    @apply border shadow-[0_0_24px_rgba(36,161,222,0.12)];
+    background: rgba(36, 161, 222, 0.14);
+    color: #24a1de;
+    border-color: rgba(36, 161, 222, 0.28);
   }
 
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
+  .bubble-me {
+    background: #566c8b;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(53, 65, 82, 0.22);
   }
 
-  /* Glow animations */
-  .glow-pulse {
-    animation: glowPulse 2s ease-in-out infinite;
+  .bubble-them {
+    @apply bg-white/[0.06] text-zinc-100 border border-white/[0.08] backdrop-blur-md shadow-[0_8px_24px_rgba(0,0,0,0.18)];
   }
 
-  @keyframes glowPulse {
-    0%,
-    100% {
-      box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
-    }
-    50% {
-      box-shadow: 0 0 40px rgba(99, 102, 241, 0.2);
-    }
+  .premium-input {
+    @apply bg-white/[0.04] border-white/10 text-zinc-100 placeholder:text-zinc-500;
+    --tw-ring-color: rgba(36, 161, 222, 0.4);
+  }
+
+  .premium-input:focus-visible {
+    border-color: rgba(36, 161, 222, 0.35);
+    box-shadow: 0 0 0 2px rgba(36, 161, 222, 0.2);
+  }
+
+  .text-telegram {
+    color: #24a1de;
+  }
+
+  .text-telegram-alt {
+    color: #0088cc;
+  }
+
+  .bg-telegram {
+    background-color: #24a1de;
+  }
+
+  .bg-telegram-alt {
+    background-color: #0088cc;
+  }
+
+  .bg-telegram-soft {
+    background-color: rgba(36, 161, 222, 0.14);
+  }
+
+  .border-telegram {
+    border-color: rgba(36, 161, 222, 0.35);
+  }
+
+  .btn-telegram {
+    background: linear-gradient(135deg, #24a1de 0%, #0088cc 100%);
+    color: #ffffff;
+    border-radius: 9999px;
+    transition:
+      opacity 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .btn-telegram:hover {
+    opacity: 0.92;
+  }
+
+  .profile-card {
+    @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.24)] rounded-[32px] p-6 md:p-8;
+  }
+
+  .profile-input {
+    @apply bg-white/[0.04] border border-white/10 text-zinc-100 placeholder:text-zinc-500 h-12 rounded-full px-5;
+    --tw-ring-color: rgba(36, 161, 222, 0.4);
+  }
+
+  .profile-input:focus-visible {
+    border-color: rgba(36, 161, 222, 0.35);
+    box-shadow: 0 0 0 2px rgba(36, 161, 222, 0.2);
+    outline: none;
+  }
+
+  .profile-textarea {
+    @apply bg-white/[0.04] border border-white/10 text-zinc-100 placeholder:text-zinc-500 rounded-[28px] px-5 py-3 text-sm resize-none;
+    --tw-ring-color: rgba(36, 161, 222, 0.4);
+  }
+
+  .profile-textarea:focus-visible {
+    border-color: rgba(36, 161, 222, 0.35);
+    box-shadow: 0 0 0 2px rgba(36, 161, 222, 0.2);
+    outline: none;
+  }
+
+  .profile-avatar-ring {
+    border: 3px solid rgba(36, 161, 222, 0.35);
+    box-shadow: 0 12px 40px rgba(36, 161, 222, 0.22);
+  }
+
+  .profile-icon-btn {
+    @apply rounded-full p-3 text-white shadow-lg transition-colors;
+    background-color: #24a1de;
+  }
+
+  .profile-icon-btn:hover {
+    background-color: #0088cc;
+  }
+
+  .profile-menu-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-full transition-colors;
+  }
+
+  .profile-menu-item:hover {
+    background: rgba(36, 161, 222, 0.1);
+  }
+
+  .hover-lift {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg;
+  }
+
+  .chat-area-pattern {
+    background-color: #080d18;
+    background-image:
+      radial-gradient(
+        circle at 25% 25%,
+        rgba(36, 161, 222, 0.05) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 75% 75%,
+        rgba(0, 136, 204, 0.04) 0%,
+        transparent 50%
+      ),
+      url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2324A1DE' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    background-size:
+      auto,
+      auto,
+      60px 60px;
+  }
+
+  /* Telegram-style settings & profile pages */
+  .tg-page {
+    background-color: #0e1621;
+  }
+
+  .tg-header {
+    background-color: #17212b;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  }
+
+  .tg-section-title {
+    font-size: 13px;
+    line-height: 1.2;
+    color: #6c7883;
+    padding: 14px 4px 8px;
+    font-weight: 500;
+  }
+
+  .tg-section {
+    background-color: #17212b;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  }
+
+  .tg-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 16px;
+    min-height: 52px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+  }
+
+  .tg-row:last-child {
+    border-bottom: none;
+  }
+
+  .tg-field-row {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.22);
+  }
+
+  .tg-field-row:last-child {
+    border-bottom: none;
+  }
+
+  .tg-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 15px;
+    line-height: 1.4;
+    outline: none;
+  }
+
+  .tg-input::placeholder {
+    color: #6c7883;
+  }
+
+  .tg-textarea {
+    width: 100%;
+    min-height: 88px;
+    background: transparent;
+    border: none;
+    color: #ffffff;
+    font-size: 15px;
+    line-height: 1.45;
+    resize: none;
+    outline: none;
+  }
+
+  .tg-textarea::placeholder {
+    color: #6c7883;
+  }
+
+  .text-tg-muted {
+    color: #6c7883;
+  }
+
+  .tg-avatar-wrap {
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+
+  .tg-avatar-wrap img {
+    width: 120px;
+    height: 120px;
+    border-radius: 9999px;
+    object-fit: cover;
+    border: 3px solid rgba(36, 161, 222, 0.25);
+  }
+
+  .tg-avatar-btn {
+    position: absolute;
+    right: 2px;
+    bottom: 2px;
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #24a1de 0%, #0088cc 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(36, 161, 222, 0.35);
+    transition:
+      transform 0.15s ease,
+      opacity 0.15s ease;
+  }
+
+  .tg-avatar-btn:hover {
+    opacity: 0.92;
+    transform: scale(1.04);
+  }
+
+  .tg-save-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 48px;
+    border-radius: 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    background: linear-gradient(135deg, #24a1de 0%, #0088cc 100%);
+    transition: opacity 0.2s ease;
+  }
+
+  .tg-save-btn:hover:not(:disabled) {
+    opacity: 0.92;
+  }
+
+  .tg-save-btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .tg-profile-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 16px 20px;
+    background: linear-gradient(
+      180deg,
+      rgba(36, 161, 222, 0.08) 0%,
+      transparent 100%
+    );
   }
 }

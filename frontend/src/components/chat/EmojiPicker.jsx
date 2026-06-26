@@ -42,7 +42,7 @@ export default function EmojiPicker({ open, onClose, onSelect }) {
   return (
     <div
       ref={panelRef}
-      className="absolute bottom-full right-0 mb-2 w-72 max-h-64 overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl p-3 z-50"
+      className="absolute bottom-full right-0 mb-2 w-80 max-h-72 overflow-y-auto rounded-[22px] border border-white/10 glass-panel-strong shadow-[0_20px_60px_rgba(0,0,0,0.35)] p-4 z-50"
     >
       {EMOJI_GROUPS.map((group) => (
         <div key={group.label} className="mb-3 last:mb-0">
@@ -58,7 +58,7 @@ export default function EmojiPicker({ open, onClose, onSelect }) {
                   onSelect(emoji);
                   onClose();
                 }}
-                className="h-9 w-9 rounded-lg text-xl hover:bg-zinc-800 transition-colors"
+                className="h-10 w-10 rounded-xl text-xl hover:bg-blue-500/10 hover:scale-110 transition-all"
               >
                 {emoji}
               </button>

@@ -29,8 +29,13 @@ export const generateDefaultAvatar = (name = "User", seed = name) => {
 
 export const getAvatarUrl = (userOrName, fallbackSeed) => {
   if (userOrName && typeof userOrName === "object") {
+    // 1. If it's a Chat object, it already has the pre-computed avatar URL
+    if (userOrName.avatar) return userOrName.avatar;
+
+    // 2. If it's a User object, look for the Cloudinary profilePic URL
     if (userOrName.profilePic?.url) return userOrName.profilePic.url;
 
+    // 3. Fallback to generating initials
     const name =
       userOrName.username ||
       userOrName.chatName ||

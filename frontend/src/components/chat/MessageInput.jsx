@@ -101,7 +101,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
   };
 
   return (
-    <div className="p-3 bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800/50 shrink-0 flex flex-col gap-2">
+    <div className="p-4 glass-panel-strong border-t border-white/5 shrink-0 flex flex-col gap-2">
       {previewUrl && (
         <div className="relative w-16 h-16 ml-12 mb-1 group">
           <img
@@ -153,7 +153,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
               disabled ? "Select a chat to message..." : "Type a message..."
             }
             disabled={disabled || isUploading}
-            className="w-full bg-zinc-900/50 border-zinc-700/50 text-zinc-100 focus-visible:ring-indigo-500 min-h-[44px] rounded-2xl pl-4 pr-12 placeholder:text-zinc-500 hover:border-zinc-600 transition-all duration-200"
+            className="w-full bg-zinc-900/50 border-zinc-700/50 text-zinc-100 focus-visible:ring-[rgba(36,161,222,0.4)] min-h-[44px] rounded-full pl-4 pr-12 placeholder:text-zinc-500 hover:border-zinc-600 transition-all duration-200"
           />
 
           <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center">
@@ -180,12 +180,12 @@ export default function MessageInput({ onSendMessage, disabled }) {
           type="submit"
           size="icon"
           disabled={(!text.trim() && !selectedImage) || disabled || isUploading}
-          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shrink-0 rounded-full w-11 h-11 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
+          className="btn-telegram shrink-0 rounded-full w-11 h-11 shadow-lg shadow-[rgba(36,161,222,0.25)] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
         >
           {isUploading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-8 h-8 animate-spin" />
           ) : (
-            <Send className="w-5 h-5 ml-0.5" />
+            <Send className="w-8 h-8 ml-0.5" />
           )}
         </Button>
       </form>

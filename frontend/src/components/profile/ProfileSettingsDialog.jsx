@@ -116,7 +116,7 @@ export default function ProfileSettingsDialog({ children }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
 
-      <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+      <DialogContent className="sm:max-w-md glass-panel-strong border-white/10 text-zinc-100 rounded-[24px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserRound className="w-5 h-5 text-indigo-400" />
