@@ -3,7 +3,11 @@ import axiosInstance from "@/lib/axios";
 import { useAuthStore } from "./authStore";
 import { db } from "@/lib/db";
 import { dedupeMessages, normalizeMessageId } from "@/lib/messageUtils";
-import { enrichChats, prepareChatsForStorage, sortChats } from "@/lib/chatUtils";
+import {
+  enrichChats,
+  prepareChatsForStorage,
+  sortChats,
+} from "@/lib/chatUtils";
 import { generateDefaultAvatar, getAvatarUrl } from "@/lib/avatar";
 
 const persistChatsToDb = async (chats) => {
@@ -218,13 +222,20 @@ export const useChatStore = create((set, get) => ({
       (!normalizedEmail || activeChat.targetEmail === normalizedEmail);
 
     if (normalizedEmail) {
+      const pendingId = `pending_${normalizedEmail}`;
+
+      // 1. Remove it from the live UI state
       set((state) => ({
-        chats: state.chats.filter(
-          (chat) =>
-            !chat.isPendingInvite || chat.targetEmail !== normalizedEmail,
-        ),
+        chats: state.chats.filter((chat) => chat._id !== pendingId),
         activeChat: wasViewingPending ? null : state.activeChat,
       }));
+
+      // 2. THE FIX: Explicitly delete the ghost chat from local IndexedDB
+      try {
+        await db.chats.delete(pendingId);
+      } catch (err) {
+        console.error("Failed to delete pending chat from local DB", err);
+      }
     }
 
     await get().fetchChats();
@@ -345,12 +356,10 @@ export const useChatStore = create((set, get) => ({
     const readerId = String(readBy);
 
     set((state) => {
-      if (state.activeChat?._id !== chatId) {
-        return {};
-      }
-
-      return {
-        messages: state.messages.map((msg) => {
+      // 1. Update the sidebar preview (chats array)
+      const updatedChats = state.chats.map((chat) => {
+        if (chat._id === chatId && chat.latestMessage) {
+          const msg = chat.latestMessage;
           const senderId =
             typeof msg.senderId === "object" && msg.senderId !== null
               ? msg.senderId._id
@@ -360,11 +369,46 @@ export const useChatStore = create((set, get) => ({
           const wasReadByRecipient = readerId !== myId;
 
           if (isMyMessage && wasReadByRecipient && msg.status !== "read") {
+            return {
+              ...chat,
+              latestMessage: { ...msg, status: "read" },
+            };
+          }
+        }
+        return chat;
+      });
+
+      // 2. Update the active chat window (messages array) if currently viewing it
+      let updatedMessages = state.messages;
+      if (state.activeChat?._id === chatId) {
+        updatedMessages = state.messages.map((msg) => {
+          const senderId =
+            typeof msg.senderId === "object" && msg.senderId !== null
+              ? msg.senderId._id
+              : msg.senderId;
+
+          const isMyMessage = String(senderId) === myId;
+          const wasReadByRecipient = readerId !== myId;
+
+          if (isMyMessage && wasReadByRecipient && msg.status !== "read") {
+            // Background update to Dexie to keep local storage in sync
+            if (msg._id) {
+              db.messages
+                .update(msg._id, { status: "read" })
+                .catch(console.error);
+            }
             return { ...msg, status: "read" };
           }
-
           return msg;
-        }),
+        });
+      }
+
+      // 3. Persist the updated sidebar to IndexedDB so it survives navigation
+      void persistChatsToDb(updatedChats);
+
+      return {
+        chats: updatedChats,
+        messages: updatedMessages,
       };
     });
   },

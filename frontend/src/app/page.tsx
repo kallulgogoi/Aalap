@@ -3,10 +3,8 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
-import { LogOut, MessageSquare } from "lucide-react";
+import { LogOut, MessageSquare, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-// Importing the actual UI components we built
 import ProfileSettingsDialog from "@/components/profile/ProfileSettingsDialog";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
@@ -23,23 +21,26 @@ export default function MainChatDashboard() {
   }, [fetchChats]);
 
   return (
-    <div className="flex h-screen w-full bg-zinc-950 overflow-hidden">
-      {/* LEFT PANEL: Sidebar (Contacts & Chats) */}
-      <div className="w-full max-w-[380px] border-r border-zinc-800 bg-zinc-950/50 flex flex-col shrink-0 transition-all duration-300">
-        {/* Header / Profile Area */}
-        <div className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0 bg-zinc-950">
+    <div className="flex h-screen w-full bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 overflow-hidden">
+      {/* LEFT PANEL: Sidebar */}
+      <div className="w-full max-w-[380px] border-r border-zinc-800/50 bg-zinc-950/30 backdrop-blur-sm flex flex-col shrink-0 transition-all duration-300">
+        {/* Header / Profile Area with Glass Effect */}
+        <div className="h-16 border-b border-zinc-800/50 flex items-center justify-between px-4 shrink-0 bg-zinc-950/60 backdrop-blur-xl">
           <ProfileSettingsDialog>
             <button
               type="button"
-              className="flex items-center gap-3 text-left rounded-lg px-1 py-1 hover:bg-zinc-900/60 transition-colors"
+              className="flex items-center gap-3 text-left rounded-xl px-2 py-1.5 hover:bg-zinc-800/30 transition-all duration-200 group"
               title="Edit profile"
             >
-              <img
-                src={getAvatarUrl(user)}
-                alt="Profile"
-                className="w-10 h-10 rounded-full object-cover border border-zinc-700"
-              />
-              <span className="font-semibold tracking-tight text-zinc-100">
+              <div className="relative">
+                <div className="absolute inset-0 rounded-full blur-md bg-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <img
+                  src={getAvatarUrl(user)}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-zinc-700/50 relative z-10 group-hover:border-indigo-500/50 transition-colors duration-300"
+                />
+              </div>
+              <span className="font-semibold tracking-tight text-zinc-100 group-hover:text-white transition-colors">
                 {user?.username}
               </span>
             </button>
@@ -48,38 +49,45 @@ export default function MainChatDashboard() {
             variant="ghost"
             size="icon"
             onClick={logout}
-            className="text-zinc-400 hover:text-red-400 hover:bg-zinc-900 transition-colors"
+            className="text-zinc-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all duration-200 hover:scale-105"
             title="Log out"
           >
             <LogOut className="w-5 h-5" />
           </Button>
         </div>
 
-        {/* The Sidebar Component with Search and Chat List */}
+        {/* The Sidebar Component */}
         <div className="flex-1 overflow-hidden">
           <ChatSidebar />
         </div>
       </div>
 
       {/* RIGHT PANEL: Active Chat Area */}
-      <div className="flex-1 bg-[#09090b] flex flex-col relative">
+      <div className="flex-1 bg-gradient-to-b from-zinc-950 to-zinc-900 flex flex-col relative">
         {activeChat ? (
           <div className="flex-1 flex flex-col h-full">
             <ChatArea />
           </div>
         ) : (
-          // Empty State (When no chat is selected from the sidebar)
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 bg-zinc-950 inset-0 absolute">
-            <div className="w-20 h-20 bg-zinc-900 rounded-full flex items-center justify-center mb-6 shadow-lg border border-zinc-800">
-              <MessageSquare className="w-10 h-10 text-indigo-500" />
+          // Beautiful Empty State
+          <div className="flex-1 flex flex-col items-center justify-center text-zinc-500">
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full blur-2xl bg-indigo-500/10 animate-pulse" />
+              <div className="w-24 h-24 bg-gradient-to-br from-indigo-500/20 to-purple-500/20 rounded-full flex items-center justify-center relative border border-zinc-800/50">
+                <MessageSquare className="w-12 h-12 text-indigo-500" />
+              </div>
             </div>
-            <h2 className="text-xl font-medium text-zinc-200 mb-2">
-              Welcome to Enterprise Chat
+            <h2 className="text-2xl font-bold text-zinc-200 mt-6 mb-2">
+              Welcome to Aalap
             </h2>
-            <p className="max-w-sm text-center text-zinc-500">
+            <p className="max-w-sm text-center text-zinc-500 leading-relaxed">
               Select a conversation from the sidebar to start messaging, or
-              search for a new contact.
+              search for a new contact to connect with.
             </p>
+            <div className="flex items-center gap-2 mt-4 text-xs text-zinc-600">
+              <Sparkles className="w-3 h-3" />
+              <span>Secure • Real-time • Encrypted</span>
+            </div>
           </div>
         )}
       </div>

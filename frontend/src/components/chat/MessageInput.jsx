@@ -1,13 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import {
-  Send,
-  Paperclip,
-  Smile,
-  X,
-  Loader2,
-} from "lucide-react";
+import { Send, Paperclip, Smile, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axiosInstance from "@/lib/axios";
@@ -107,18 +101,18 @@ export default function MessageInput({ onSendMessage, disabled }) {
   };
 
   return (
-    <div className="p-4 bg-zinc-950 border-t border-zinc-800 shrink-0 flex flex-col gap-2">
+    <div className="p-4 bg-zinc-950/80 backdrop-blur-sm border-t border-zinc-800/50 shrink-0 flex flex-col gap-2">
       {previewUrl && (
         <div className="relative w-20 h-20 ml-12 mb-2 group">
           <img
             src={previewUrl}
             alt="Preview"
-            className="w-full h-full object-cover rounded-lg border border-zinc-700"
+            className="w-full h-full object-cover rounded-xl border border-zinc-700 shadow-lg"
           />
           <button
             type="button"
             onClick={clearImage}
-            className="absolute -top-2 -right-2 bg-zinc-800 text-zinc-300 rounded-full p-1 shadow-md hover:bg-zinc-700 hover:text-white"
+            className="absolute -top-2 -right-2 bg-zinc-800 text-zinc-300 rounded-full p-1.5 shadow-md hover:bg-zinc-700 hover:text-white transition-all hover:scale-110"
           >
             <X className="w-3 h-3" />
           </button>
@@ -143,7 +137,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
           variant="ghost"
           size="icon"
           onClick={() => fileInputRef.current?.click()}
-          className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 shrink-0 mb-1"
+          className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 shrink-0 mb-1 rounded-xl transition-all duration-200"
           disabled={disabled || isUploading}
         >
           <Paperclip className="w-5 h-5" />
@@ -158,7 +152,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
               disabled ? "Select a chat to message..." : "Type a message..."
             }
             disabled={disabled || isUploading}
-            className="w-full bg-zinc-900 border-zinc-800 text-zinc-100 focus-visible:ring-indigo-500 min-h-[44px] rounded-2xl pl-4 pr-12"
+            className="w-full bg-zinc-900/50 border-zinc-700/50 text-zinc-100 focus-visible:ring-indigo-500 min-h-[44px] rounded-2xl pl-4 pr-12 placeholder:text-zinc-500 hover:border-zinc-600 transition-all duration-200"
           />
 
           <div className="absolute right-1 top-1/2 -translate-y-1/2">
@@ -167,7 +161,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
               variant="ghost"
               size="icon"
               onClick={() => setShowEmojiPicker((prev) => !prev)}
-              className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 h-9 w-9"
+              className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 h-9 w-9 rounded-xl transition-all duration-200"
               disabled={disabled || isUploading}
               title="Add emoji"
             >
@@ -185,12 +179,12 @@ export default function MessageInput({ onSendMessage, disabled }) {
           type="submit"
           size="icon"
           disabled={(!text.trim() && !selectedImage) || disabled || isUploading}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0 rounded-full w-11 h-11 mb-0.5 shadow-md transition-all disabled:opacity-50"
+          className="bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white shrink-0 rounded-full w-11 h-11 mb-0.5 shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
         >
           {isUploading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <Send className="w-5 h-5 ml-1" />
+            <Send className="w-5 h-5 ml-0.5" />
           )}
         </Button>
       </form>
