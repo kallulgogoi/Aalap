@@ -1,6 +1,7 @@
 const User = require("../models/User");
 const fs = require("fs");
 const { uploadImage, deleteImage } = require("../services/cloudinary");
+const redisClient = require("../config/redis");
 
 // Search for a user by email to start a chat
 const searchUser = async (req, res, next) => {
@@ -20,12 +21,44 @@ const searchUser = async (req, res, next) => {
       return res.status(200).json({ success: true, exists: false });
     }
 
-    res.status(200).json({ success: true, exists: true, user });
+    const socketId = await redisClient.get(`user:${user._id}`);
+    const userObj = user.toObject();
+    userObj.isOnline = !!socketId;
+
+    res.status(200).json({ success: true, exists: true, user: userObj });
   } catch (error) {
     next(error);
   }
 };
 
+const searchUsers = async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email)
+      return res.status(400).json({ message: "Please provide an email" });
+
+    // Find users matching the email (case-insensitive), but exclude the current logged-in user
+    const users = await User.find({
+      email: { $regex: email, $options: "i" },
+      _id: { $ne: req.user._id },
+    })
+      .select("-password")
+      .limit(5);
+
+    const usersWithPresence = await Promise.all(
+      users.map(async (u) => {
+        const socketId = await redisClient.get(`user:${u._id}`);
+        const userObj = u.toObject();
+        userObj.isOnline = !!socketId;
+        return userObj;
+      })
+    );
+
+    res.status(200).json(usersWithPresence);
+  } catch (error) {
+    res.status(500).json({ message: "Server error during search" });
+  }
+};
 // Update Profile details & Avatar
 const updateProfile = async (req, res, next) => {
   try {
@@ -66,4 +99,4 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { searchUser, updateProfile };
+module.exports = { searchUser, updateProfile, searchUsers };

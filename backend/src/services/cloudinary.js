@@ -15,12 +15,11 @@ cloudinary.config({
  */
 const uploadImage = async (filePath, folder = "chat_app_profiles") => {
   try {
+    // Keep it simple to avoid signature mismatches
     const result = await cloudinary.uploader.upload(filePath, {
       folder: folder,
-      transformation: [
-        { width: 500, height: 500, crop: "fill", gravity: "face" },
-        { quality: "auto", fetch_format: "auto" },
-      ],
+      // Remove complex transformations for now to debug the signature
+      resource_type: "image",
     });
 
     return {
@@ -29,7 +28,7 @@ const uploadImage = async (filePath, folder = "chat_app_profiles") => {
     };
   } catch (error) {
     console.error("Cloudinary Upload Error:", error.message);
-    throw new Error("Failed to upload image to cloud storage.");
+    throw new Error("Failed to upload image.");
   }
 };
 

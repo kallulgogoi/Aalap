@@ -6,7 +6,7 @@ const messageSchema = new mongoose.Schema(
     chatId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Chat",
-      required: true,
+      default: null, // Null for shadow messages (no chat container yet)
       index: true, // Critical for fetching chat history instantly
     },
     senderId: {
@@ -67,7 +67,8 @@ const messageSchema = new mongoose.Schema(
 
 // --- ENTERPRISE DATA INTEGRITY CHECK ---
 // Runs on every save/update to ensure empty/broken messages never enter the database
-messageSchema.pre("validate", function (next) {
+// Note: Mongoose 9+ uses async hooks (no `next` callback)
+messageSchema.pre("validate", function () {
   // 1. Text validation
   if (this.messageType === "text" && (!this.text || !this.text.trim())) {
     this.invalidate("text", "Text is required for a standard text message.");
@@ -83,8 +84,6 @@ messageSchema.pre("validate", function (next) {
       "A valid Cloudinary URL is required for media messages.",
     );
   }
-
-  next();
 });
 
 // --- PRODUCTION INDEXES ---

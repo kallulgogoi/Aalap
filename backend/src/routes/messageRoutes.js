@@ -8,6 +8,7 @@ const redisClient = require("../config/redis"); // Import your Redis client
 const { protect } = require("../middlewares/authMiddleware");
 const {
   fetchMessages,
+  sendMessage,
   sendShadowMessage,
   uploadMessageMedia,
   softDeleteMessage,
@@ -35,6 +36,7 @@ router.use(apiLimiter);
 
 // Message Routes
 router.get("/:chatId", fetchMessages);
+router.post("/", sendMessage); // Send a message (ghost chat or existing chat)
 router.post("/shadow", sendShadowMessage);
 router.post("/upload", upload.single("chatImage"), uploadMessageMedia);
 router.put("/:id/delete", softDeleteMessage);
