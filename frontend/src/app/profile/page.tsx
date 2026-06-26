@@ -1,12 +1,14 @@
 "use client";
 
-import TelegramPageLayout from "@/components/layout/TelegramPageLayout";
-import ProfileSettingsForm from "@/components/profile/ProfileSettingsForm";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-export default function ProfilePage() {
-  return (
-    <TelegramPageLayout title="Edit Profile" showBackOnDesktop>
-      <ProfileSettingsForm />
-    </TelegramPageLayout>
-  );
+export default function ProfileRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/?open=profile");
+  }, [router]);
+
+  return null;
 }

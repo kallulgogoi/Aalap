@@ -1,35 +1,29 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useChatStore } from "@/store/chatStore";
 import { MessageSquare, Settings, UserCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const tabs = [
-  { id: "chats", href: "/", icon: MessageSquare, label: "Chats" },
-  { id: "profile", href: "/profile", icon: UserCircle, label: "Profile" },
-  { id: "settings", href: "/settings", icon: Settings, label: "Settings" },
-];
-
-export default function MobileTabBar() {
-  const pathname = usePathname();
+export default function MobileTabBar({
+  activeTab = "chats",
+  onTabChange,
+}) {
   const chats = useChatStore((state) => state.chats);
   const unreadCount = chats.filter((chat) => chat.unreadCount > 0).length;
 
-  const activeTab =
-    pathname === "/profile"
-      ? "profile"
-      : pathname === "/settings"
-        ? "settings"
-        : "chats";
+  const tabs = [
+    { id: "chats", icon: MessageSquare, label: "Chats" },
+    { id: "profile", icon: UserCircle, label: "Profile" },
+    { id: "settings", icon: Settings, label: "Settings" },
+  ];
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[#17212b] border-t border-black/25 flex items-center justify-around py-2 px-6 z-50">
       {tabs.map((tab) => (
-        <Link
+        <button
           key={tab.id}
-          href={tab.href}
+          type="button"
+          onClick={() => onTabChange?.(tab.id)}
           className={cn(
             "flex flex-col items-center gap-0.5 p-2 rounded-full transition-all relative min-w-[64px]",
             activeTab === tab.id
@@ -47,7 +41,7 @@ export default function MobileTabBar() {
               {unreadCount}
             </span>
           )}
-        </Link>
+        </button>
       ))}
     </div>
   );

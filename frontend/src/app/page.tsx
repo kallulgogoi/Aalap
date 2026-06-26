@@ -1,45 +1,43 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import { useChatStore } from "@/store/chatStore";
 import {
   LogOut,
-  MessageSquare,
-  Sparkles,
   X,
-  MoreHorizontal,
   UserCircle,
   Menu,
   ChevronRight,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import ChatDetailsPanel from "@/components/chat/ChatDetailsPanel";
 import MobileTabBar from "@/components/layout/MobileTabBar";
+import ProfileDialog from "@/components/profile/ProfileDialog";
+import SettingsDialog from "@/components/settings/SettingsDialog";
 import { getAvatarUrl } from "@/lib/avatar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import Image from "next/image";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 export default function MainChatDashboard() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const activeChat = useChatStore((state) => state.activeChat);
+  const setActiveChat = useChatStore((state) => state.setActiveChat);
   const fetchChats = useChatStore((state) => state.fetchChats);
+
   const [sidebarWidth, setSidebarWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isDesktopDrawerOpen, setIsDesktopDrawerOpen] = useState(false);
+  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileTab, setMobileTab] = useState("chats");
   const sidebarRef = useRef(null);
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
@@ -47,6 +45,16 @@ export default function MainChatDashboard() {
   useEffect(() => {
     fetchChats();
   }, [fetchChats]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const panel = params.get("open");
+    if (panel === "profile") setProfileOpen(true);
+    if (panel === "settings") setSettingsOpen(true);
+    if (panel) {
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, []);
 
   const startResize = (e: React.MouseEvent) => {
     setIsResizing(true);
@@ -81,97 +89,111 @@ export default function MainChatDashboard() {
   }, [isResizing]);
 
   const handleLogout = () => {
-    setIsDesktopDrawerOpen(false);
+    setIsAccountDrawerOpen(false);
+    setSettingsOpen(false);
+    setProfileOpen(false);
     logout();
     toast.success("Logged out successfully");
   };
 
-  const MobileAccountMenu = () => (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl"
-          title="Menu"
-        >
-          <MoreHorizontal className="w-5 h-5" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        className="glass-panel-strong border-white/10 text-zinc-100 min-w-[180px]"
-      >
-        <DropdownMenuItem
-          onClick={handleLogout}
-          className="hover:bg-red-500/10 cursor-pointer flex items-center gap-2 text-red-400 focus:text-red-300"
-        >
-          <LogOut className="w-4 h-4" />
-          Logout
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+  const openProfile = () => {
+    setIsAccountDrawerOpen(false);
+    setMobileTab("profile");
+    setProfileOpen(true);
+  };
+
+  const openSettings = () => {
+    setIsAccountDrawerOpen(false);
+    setMobileTab("settings");
+    setSettingsOpen(true);
+  };
+
+  const handleMobileTabChange = (tab: string) => {
+    setMobileTab(tab);
+    if (tab === "chats") {
+      setActiveChat(null);
+      setProfileOpen(false);
+      setSettingsOpen(false);
+      return;
+    }
+    if (tab === "profile") {
+      setProfileOpen(true);
+      setSettingsOpen(false);
+      return;
+    }
+    if (tab === "settings") {
+      setSettingsOpen(true);
+      setProfileOpen(false);
+    }
+  };
 
   return (
     <div className="flex h-screen w-full app-bg overflow-hidden">
-      {/* Desktop drawer overlay */}
-      {isDesktopDrawerOpen && (
+      {isAccountDrawerOpen && (
         <div
-          className="hidden md:block fixed inset-0 bg-black/50 z-[60]"
-          onClick={() => setIsDesktopDrawerOpen(false)}
+          className="fixed inset-0 bg-black/55 z-[60] backdrop-blur-[2px]"
+          onClick={() => setIsAccountDrawerOpen(false)}
         />
       )}
 
-      {/* Desktop account drawer */}
       <div
         className={cn(
-          "hidden md:flex fixed inset-y-0 left-0 z-[70] w-[300px] flex-col bg-zinc-950 border-r border-white/10 shadow-2xl transform transition-transform duration-300 ease-out",
-          isDesktopDrawerOpen
+          "fixed inset-y-0 left-0 z-[70] w-[min(300px,88vw)] flex flex-col bg-[#17212b] border-r border-black/25 shadow-2xl transform transition-transform duration-300 ease-out",
+          isAccountDrawerOpen
             ? "translate-x-0"
             : "-translate-x-full pointer-events-none",
         )}
       >
-        <div className="h-16 border-b border-white/5 flex items-center justify-between px-4 shrink-0">
-          <span className="text-sm font-medium text-zinc-400">Account</span>
+        <div className="h-14 border-b border-black/20 flex items-center justify-between px-4 shrink-0">
+          <span className="text-[15px] font-medium text-white">Account</span>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setIsDesktopDrawerOpen(false)}
-            className="text-zinc-400 hover:text-zinc-100 hover:bg-telegram-soft rounded-full"
+            onClick={() => setIsAccountDrawerOpen(false)}
+            className="text-tg-muted hover:text-white hover:bg-white/5 rounded-full"
           >
             <X className="w-5 h-5" />
           </Button>
         </div>
 
-        <div className="flex flex-col flex-1 p-5">
-          <div className="flex flex-col items-center py-6 px-4 rounded-[32px] bg-telegram-soft">
+        <div className="flex flex-col flex-1 p-4">
+          <div className="flex flex-col items-center py-6 px-4 rounded-2xl bg-telegram-soft">
             <img
               src={getAvatarUrl(user)}
               alt="Profile"
               className="w-24 h-24 rounded-full object-cover profile-avatar-ring"
             />
-            <p className="mt-4 font-semibold text-[#FFFFFF]">
-              {user?.username}
-            </p>
-            <p className="text-sm text-zinc-400 mt-1 px-4 py-1 rounded-full bg-white/5">
-              {user?.email}
-            </p>
+            <p className="mt-4 font-semibold text-white">{user?.username}</p>
+            <p className="text-sm text-tg-muted mt-1">{user?.email}</p>
           </div>
 
-          <Link
-            href="/profile"
-            onClick={() => setIsDesktopDrawerOpen(false)}
-            className="profile-menu-item mt-5 group"
+          <button
+            type="button"
+            onClick={openProfile}
+            className="profile-menu-item mt-4 group"
           >
             <div className="w-11 h-11 rounded-full bg-telegram-soft flex items-center justify-center">
               <UserCircle className="w-5 h-5 text-telegram" />
             </div>
-            <span className="flex-1 text-sm font-medium text-[#FFFFFF]">
+            <span className="flex-1 text-sm font-medium text-white text-left">
               My Profile
             </span>
-            <ChevronRight className="w-4 h-4 text-zinc-500 group-hover:text-telegram transition-colors" />
-          </Link>
+            <ChevronRight className="w-4 h-4 text-tg-muted group-hover:text-telegram transition-colors" />
+          </button>
+
+          <button
+            type="button"
+            onClick={openSettings}
+            className="profile-menu-item mt-1 group"
+          >
+            <div className="w-11 h-11 rounded-full bg-telegram-soft flex items-center justify-center">
+              <Settings className="w-5 h-5 text-telegram" />
+            </div>
+            <span className="flex-1 text-sm font-medium text-white text-left">
+              Settings
+            </span>
+            <ChevronRight className="w-4 h-4 text-tg-muted group-hover:text-telegram transition-colors" />
+          </button>
 
           <div className="mt-auto pt-4 border-t border-white/5">
             <button
@@ -186,7 +208,6 @@ export default function MainChatDashboard() {
         </div>
       </div>
 
-      {/* LEFT PANEL: Sidebar */}
       <div
         ref={sidebarRef}
         style={{ width: sidebarWidth }}
@@ -205,36 +226,32 @@ export default function MainChatDashboard() {
           onMouseDown={startResize}
         />
 
-        <div className="h-16 border-b border-zinc-800/50 flex items-center justify-between px-4 shrink-0 bg-zinc-950/60 backdrop-blur-xl">
-          <div className="flex items-center gap-2">
+        <div className="h-16 border-b border-zinc-800/50 flex items-center px-4 shrink-0 bg-zinc-950/60 backdrop-blur-xl">
+          <div className="flex items-center gap-2 min-w-0">
             {activeChat && isMobileSidebarOpen && (
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50"
+                className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 shrink-0"
               >
                 <X className="w-5 h-5" />
               </Button>
             )}
 
-            <span className="md:hidden text-lg font-display font-bold text-telegram">
-              Aalap
-            </span>
-
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => setIsDesktopDrawerOpen(true)}
-              className="hidden md:flex text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl"
+              onClick={() => setIsAccountDrawerOpen(true)}
+              className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl shrink-0"
               title="Open menu"
             >
               <Menu className="w-5 h-5" />
             </Button>
-          </div>
 
-          <div className="flex items-center gap-1 md:hidden">
-            <MobileAccountMenu />
+            <span className="text-lg font-display font-bold text-telegram truncate">
+              Aalap
+            </span>
           </div>
         </div>
 
@@ -243,7 +260,6 @@ export default function MainChatDashboard() {
         </div>
       </div>
 
-      {/* RIGHT PANEL: Active Chat Area */}
       <div
         className={cn(
           "flex-1 bg-gradient-to-b from-zinc-950 to-zinc-900 flex flex-col relative md:pb-0",
@@ -261,13 +277,13 @@ export default function MainChatDashboard() {
           <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 p-6">
             <div className="relative">
               <div className="absolute inset-0 rounded-full blur-2xl bg-telegram-soft animate-pulse" />
-              <div className="w-42 h-42 rounded-full flex items-center justify-center relative  ">
+              <div className="w-42 h-42 rounded-full flex items-center justify-center relative">
                 <Image
                   src="/images/empty1.png"
-                  alt="Profile"
+                  alt="Welcome"
                   width={90}
                   height={90}
-                  className="w-full h-full object-fit rounded-full "
+                  className="w-full h-full object-fit rounded-full"
                 />
               </div>
             </div>
@@ -286,7 +302,26 @@ export default function MainChatDashboard() {
         <ChatDetailsPanel onClose={() => setDetailsOpen(false)} />
       )}
 
-      {!activeChat && <MobileTabBar />}
+      {!activeChat && (
+        <MobileTabBar activeTab={mobileTab} onTabChange={handleMobileTabChange} />
+      )}
+
+      <ProfileDialog
+        open={profileOpen}
+        onOpenChange={(open) => {
+          setProfileOpen(open);
+          if (!open && !settingsOpen) setMobileTab("chats");
+        }}
+      />
+
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={(open) => {
+          setSettingsOpen(open);
+          if (!open && !profileOpen) setMobileTab("chats");
+        }}
+        onOpenProfile={openProfile}
+      />
     </div>
   );
 }

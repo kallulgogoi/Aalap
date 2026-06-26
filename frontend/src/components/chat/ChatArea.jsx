@@ -120,6 +120,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
     };
   }, [socket]);
 
+  // INJECTED FIX: Handle ghost chat transition smoothly
   const handleSendMessage = async (input, mediaUrl = null) => {
     const myId = user?.id || user?._id;
 
@@ -143,16 +144,29 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
       const newMsg = data.message || data;
 
       if (isGhost && data.chatId) {
-        const realChat = {
-          _id: data.chatId,
-          chatName: activeChat.chatName,
-          avatar: activeChat.avatar,
-          participants: [user?.id || user?._id, activeChat.receiverId],
-        };
-        await useChatStore.getState().setActiveChat(realChat);
-        useChatStore.getState().setMessages([newMsg]);
-        useChatStore.getState().fetchChats();
+        // Step 1: Refresh the sidebar to get the new chat object
+        await useChatStore.getState().fetchChats();
+
+        // Step 2: Find the real chat in the newly fetched store
+        const realChat = useChatStore
+          .getState()
+          .chats.find((c) => c._id === data.chatId);
+
+        if (realChat) {
+          // Setting the active chat automatically fetches the clean message history
+          await useChatStore.getState().setActiveChat(realChat);
+        } else {
+          // Fallback if the fetch missed it
+          const fallbackChat = {
+            _id: data.chatId,
+            chatName: activeChat.chatName,
+            avatar: activeChat.avatar,
+            participants: [user?.id || user?._id, activeChat.receiverId],
+          };
+          await useChatStore.getState().setActiveChat(fallbackChat);
+        }
       } else {
+        // Normal message flow
         addLiveMessage(newMsg);
       }
     } catch (error) {

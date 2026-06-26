@@ -103,7 +103,7 @@ export default function ChatSidebar({ onChatSelect, isLoading = false }) {
               <MessageCircleWarning className="w-12 h-12 text-zinc-300" />
             </div>
             <p className="text-xl font-medium text-zinc-100">
-              No conversations
+              No Unread conversations
             </p>
             <p className="text-md text-zinc-500 mt-1 max-w-[220px]">
               Start a new chat to connect with someone instantly.
