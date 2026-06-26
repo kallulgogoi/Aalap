@@ -6,6 +6,13 @@ const { errorHandler } = require("./middlewares/errorMiddleware");
 
 const app = express();
 
+// --- 0. INFRASTRUCTURE CONNECTIONS (For Serverless environments like Vercel) ---
+const connectDB = require("./config/db");
+const { connectRabbitMQ } = require("./config/rabbitmq");
+connectDB();
+connectRabbitMQ();
+
+
 // --- 1. GLOBAL MIDDLEWARE & SECURITY ---
 
 // Helmet secures Express apps by setting various HTTP headers

@@ -133,7 +133,7 @@ export default function ChatSidebar({ onChatSelect, isLoading = false }) {
             }
 
             const isActive = activeChat?._id === chat._id;
-
+// console.log("Avatar Debug:", chat);
             return (
               <button
                 key={chat._id}
@@ -148,7 +148,7 @@ export default function ChatSidebar({ onChatSelect, isLoading = false }) {
               >
                 <div className="relative shrink-0">
                   <img
-                    src={getAvatarUrl(chat)}
+                    src={chat.avatar||getAvatarUrl(chat)}
                     alt="Avatar"
                     className="w-12 h-12 rounded-full object-cover border border-white/10"
                   />

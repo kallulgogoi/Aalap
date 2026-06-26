@@ -17,22 +17,32 @@ export const enrichChat = (chat, currentUser) => {
     };
   }
 
-  const otherParticipant = chat.participants?.find(
-    (p) => p._id !== currentUser?.id && p._id !== currentUser?._id,
-  );
+  // 1. Find the other participant carefully
+  const otherParticipant = chat.participants?.find((p) => {
+    const pId = typeof p === "object" && p !== null ? p._id : p;
+    return String(pId) !== String(currentUser?.id || currentUser?._id);
+  });
 
-  const chatName = otherParticipant
-    ? otherParticipant.username
-    : chat.chatName || "Unknown User";
+  // 2. Extract info safely
+  const pUsername = otherParticipant?.username;
+  const pEmail = otherParticipant?.email;
+  const pId = otherParticipant?._id || otherParticipant; // Handles both populated and unpopulated
 
-  const avatar = otherParticipant
-    ? otherParticipant.profilePic?.url ||
-      generateDefaultAvatar(
-        chatName,
-        otherParticipant.email || String(otherParticipant._id),
-      )
-    : chat.avatar ||
-      generateDefaultAvatar(chatName, chat.targetEmail || chatName);
+  // 3. Robust Chat Name: Username -> Email prefix -> Provided ChatName -> "Unknown User"
+  const chatName =
+    pUsername ||
+    (pEmail ? pEmail.split("@")[0] : null) ||
+    chat.chatName ||
+    "Unknown User";
+
+  // 4. Robust Avatar: Profile URL -> Generated Initials using a reliable seed (Email or ID)
+  const hasUploadedPic =
+    otherParticipant?.profilePic?.url &&
+    !otherParticipant.profilePic.url.includes("ui-avatars.com");
+
+  const avatar = hasUploadedPic
+    ? otherParticipant.profilePic.url
+    : generateDefaultAvatar(chatName, pEmail || String(pId) || chatName);
 
   return {
     ...chat,

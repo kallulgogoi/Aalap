@@ -251,6 +251,12 @@ const sendMessage = async (req, res, next) => {
     chat.lastMessage = newMessage._id;
     await chat.save();
 
+    // Populate sender info so the receiver's UI can display correct avatar/name
+    const populatedMessage = await Message.findById(newMessage._id).populate(
+      "senderId",
+      "username profilePic email",
+    );
+
     // Push to receiver via WebSocket if they're online
     try {
       if (resolvedReceiverId) {
@@ -258,7 +264,9 @@ const sendMessage = async (req, res, next) => {
           `user:${resolvedReceiverId}`,
         );
         if (receiverSocketId) {
-          getIO().to(receiverSocketId).emit("receive_message", newMessage);
+          getIO()
+            .to(receiverSocketId)
+            .emit("receive_message", populatedMessage || newMessage);
         }
       }
     } catch (socketErr) {

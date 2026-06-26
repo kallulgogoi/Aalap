@@ -366,6 +366,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
                   key={normalizeMessageId(msg._id) || `msg-${index}`}
                   message={msg}
                   isMe={isMe}
+                  activeChat={activeChat}
                   onDelete={handleDeleteMessage}
                   onRestore={handleRestoreMessage}
                 />

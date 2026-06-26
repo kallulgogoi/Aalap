@@ -281,6 +281,7 @@ export default function MainChatDashboard() {
                 <Image
                   src="/images/empty1.png"
                   alt="Welcome"
+                  loading="eager"
                   width={90}
                   height={90}
                   className="w-full h-full object-fit rounded-full"
@@ -303,7 +304,10 @@ export default function MainChatDashboard() {
       )}
 
       {!activeChat && (
-        <MobileTabBar activeTab={mobileTab} onTabChange={handleMobileTabChange} />
+        <MobileTabBar
+          activeTab={mobileTab}
+          onTabChange={handleMobileTabChange}
+        />
       )}
 
       <ProfileDialog

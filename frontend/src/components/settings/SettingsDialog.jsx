@@ -11,10 +11,13 @@ import {
   ChevronRight,
   UserCircle,
   Settings,
+  Trash2,
 } from "lucide-react";
 import TelegramModal from "@/components/ui/TelegramModal";
 import { TelegramSection, TelegramRow } from "@/components/ui/TelegramSettings";
 import { toast } from "sonner";
+import { db } from "@/lib/db";
+
 
 export default function SettingsDialog({
   open,
@@ -30,10 +33,26 @@ export default function SettingsDialog({
     toast.success("Logged out successfully");
   };
 
+  const handleClearDatabase = async () => {
+    try {
+      await db.messages.clear();
+      await db.chats.clear();
+      toast.success("Local database cache cleared!");
+      onOpenChange(false);
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    } catch (error) {
+      console.error("Failed to clear database:", error);
+      toast.error("Failed to clear local database");
+    }
+  };
+
   const handleOpenProfile = () => {
     onOpenChange(false);
     onOpenProfile?.();
   };
+
 
   return (
     <TelegramModal open={open} onOpenChange={onOpenChange} title="Settings">
@@ -97,6 +116,15 @@ export default function SettingsDialog({
             iconClassName="text-[#0088CC]"
             label="Active Sessions"
             hint="Manage logged-in devices"
+          />
+          <TelegramRow
+            icon={Trash2}
+            iconBgClassName="bg-red-500/15"
+            iconClassName="text-red-400"
+            label="Clear Local Database"
+            hint="Delete locally stored messages and chats cache"
+            showChevron={false}
+            onClick={handleClearDatabase}
           />
         </TelegramSection>
 

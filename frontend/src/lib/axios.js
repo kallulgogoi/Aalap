@@ -1,10 +1,15 @@
 import axios from "axios";
 import { useAuthStore } from "../store/authStore";
 
+const getBaseURL = () => {
+  const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+  return url.endsWith("/api") ? url : `${url}/api`;
+};
+
 // Create a custom Axios instance
 const axiosInstance = axios.create({
   // Point this to your Express backend
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: getBaseURL(),
   headers: {
     "Content-Type": "application/json",
   },

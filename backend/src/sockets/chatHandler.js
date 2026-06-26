@@ -45,12 +45,21 @@ const registerChatHandlers = (io, socket) => {
       chat.lastMessage = newMessage._id;
       await chat.save();
 
-      // 3. Routing (Redis O(1) Lookup)
+      // 3. Populate sender info for the receiver's UI
+      const populatedMessage = await Message.findById(newMessage._id).populate(
+        "senderId",
+        "username profilePic email",
+      );
+
+      // 4. Routing (Redis O(1) Lookup)
       const receiverSocketId = await redisClient.get(`user:${receiverId}`);
 
       if (receiverSocketId) {
         // Receiver is online: Push the message to them instantly
-        io.to(receiverSocketId).emit("receive_message", newMessage);
+        io.to(receiverSocketId).emit(
+          "receive_message",
+          populatedMessage || newMessage,
+        );
       }
 
       // 4. Acknowledge success back to the sender's frontend

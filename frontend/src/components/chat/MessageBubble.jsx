@@ -18,7 +18,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-export default function MessageBubble({ message, isMe, onDelete, onRestore }) {
+
+export default function MessageBubble({ message, isMe, onDelete, onRestore, activeChat }) {
   const [showUndo, setShowUndo] = useState(false);
 
   useEffect(() => {
@@ -79,6 +80,33 @@ export default function MessageBubble({ message, isMe, onDelete, onRestore }) {
     );
   }
 
+  // FIX: Safely extract sender details for the avatar generator and display name
+  // First, check if senderId is already a populated object from the server
+  let senderObj =
+    typeof message.senderId === "object" && message.senderId !== null
+      ? message.senderId
+      : null;
+
+  // Fallback: If senderId is a plain string, look up the sender from activeChat's participants
+  if (!senderObj && activeChat?.participants?.length) {
+    const senderIdStr = typeof message.senderId === "string" ? message.senderId : String(message.senderId);
+    const matchedParticipant = activeChat.participants.find((p) => {
+      const pId = typeof p === "object" && p !== null ? p._id : p;
+      return String(pId) === senderIdStr;
+    });
+    if (matchedParticipant && typeof matchedParticipant === "object") {
+      senderObj = matchedParticipant;
+    }
+  }
+
+  // Final fallback
+  if (!senderObj) {
+    senderObj = { username: message.senderName };
+  }
+
+  const displayName =
+    senderObj.username || message.senderName || senderObj.email?.split("@")[0];
+
   return (
     <div
       className={cn(
@@ -89,10 +117,7 @@ export default function MessageBubble({ message, isMe, onDelete, onRestore }) {
       {!isMe && (
         <div className="w-8 h-8 rounded-xl shrink-0 mr-2 mt-1 overflow-hidden border border-white/10">
           <img
-            src={getAvatarUrl({
-              username: message.senderName,
-              profilePic: message.senderId?.profilePic,
-            })}
+            src={getAvatarUrl(senderObj)}
             alt="avatar"
             className="w-full h-full object-cover"
           />
@@ -100,9 +125,9 @@ export default function MessageBubble({ message, isMe, onDelete, onRestore }) {
       )}
 
       <div className="relative flex flex-col max-w-[72%]">
-        {!isMe && message.senderName && (
+        {!isMe && displayName && (
           <span className="text-[11px] font-medium text-blue-300 mb-1 ml-2">
-            {message.senderName}
+            {displayName}
           </span>
         )}
 

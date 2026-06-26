@@ -18,12 +18,14 @@ const fetchChats = async (req, res, next) => {
     const chatsWithMetadata = await Promise.all(
       chats.map(async (chat) => {
         const otherParticipant = chat.participants.find(
-          (p) => p._id.toString() !== req.user._id.toString()
+          (p) => p._id.toString() !== req.user._id.toString(),
         );
 
         let isOnline = false;
         if (otherParticipant) {
-          const socketId = await redisClient.get(`user:${otherParticipant._id}`);
+          const socketId = await redisClient.get(
+            `user:${otherParticipant._id}`,
+          );
           isOnline = !!socketId;
         }
 
@@ -37,7 +39,7 @@ const fetchChats = async (req, res, next) => {
         chatObj.isOnline = isOnline;
         chatObj.unreadCount = unreadCount;
         return chatObj;
-      })
+      }),
     );
 
     // Pending shadow invites the current user has sent to unregistered emails
