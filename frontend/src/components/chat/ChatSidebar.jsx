@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useChatStore } from "@/store/chatStore";
-import { Search } from "lucide-react";
+import { Search, Clock } from "lucide-react";
 import NewChatDialog from "./NewChatDialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export default function ChatSidebar() {
   const { chats, activeChat, setActiveChat, clearUnreadCount } = useChatStore();
@@ -58,20 +59,19 @@ export default function ChatSidebar() {
               {/* Avatar */}
               <div className="relative shrink-0">
                 <img
-                  src={
-                    chat.avatar ||
-                    "https://ui-avatars.com/api/?name=Chat&background=random"
-                  }
+                  src={getAvatarUrl(chat)}
                   alt="Avatar"
                   className="w-12 h-12 rounded-full object-cover border border-zinc-700"
                 />
                 {/* Online Status Indicator */}
-                <span
-                  className={cn(
-                    "absolute bottom-0 right-0 w-3 h-3 border-2 border-zinc-950 rounded-full transition-colors",
-                    chat.isOnline ? "bg-green-500" : "bg-zinc-600",
-                  )}
-                ></span>
+                {!chat.isPendingInvite && (
+                  <span
+                    className={cn(
+                      "absolute bottom-0 right-0 w-3 h-3 border-2 border-zinc-950 rounded-full transition-colors",
+                      chat.isOnline ? "bg-green-500" : "bg-zinc-600",
+                    )}
+                  />
+                )}
               </div>
 
               {/* Chat Info */}
@@ -86,15 +86,27 @@ export default function ChatSidebar() {
                   </span>
                 </div>
                 <p className="text-sm text-zinc-400 truncate">
-                  {chat.latestMessage?.text || chat.latestMessage?.content || "Start a new conversation..."}
+                  {chat.isPendingInvite
+                    ? chat.latestMessage?.text || "Invite sent — waiting to join"
+                    : chat.latestMessage?.text ||
+                      chat.latestMessage?.content ||
+                      "Start a new conversation..."}
                 </p>
               </div>
 
-              {/* Unread Badge */}
-              {chat.unreadCount > 0 && (
-                <div className="shrink-0 bg-indigo-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md">
-                  {chat.unreadCount}
+              {chat.isPendingInvite ? (
+                <div
+                  className="shrink-0 bg-amber-500/15 text-amber-400 p-1.5 rounded-full"
+                  title="Waiting for user to join"
+                >
+                  <Clock className="w-4 h-4" />
                 </div>
+              ) : (
+                chat.unreadCount > 0 && (
+                  <div className="shrink-0 bg-indigo-600 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-md">
+                    {chat.unreadCount}
+                  </div>
+                )
               )}
             </button>
           ))

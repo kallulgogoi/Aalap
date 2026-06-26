@@ -79,6 +79,7 @@ const resolveShadowMessages = async (newUserId, userEmail) => {
         // Push an instant reactive payload down the active WebSocket pipeline
         io.to(senderSocketId).emit("shadow_resolved", {
           chatId: chatId,
+          targetEmail: formattedEmail,
           resolvedWithUserId: newUserId,
           message: "Your pending invitation chat is now active.",
         });

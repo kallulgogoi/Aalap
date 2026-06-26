@@ -1,4 +1,22 @@
+import { generateDefaultAvatar } from "@/lib/avatar";
+
 export const enrichChat = (chat, currentUser) => {
+  if (chat.isPendingInvite) {
+    const email = chat.targetEmail || chat.chatName || "Invite";
+    const displayName = chat.chatName || email.split("@")[0] || email;
+
+    return {
+      ...chat,
+      chatName: displayName,
+      avatar: chat.avatar || generateDefaultAvatar(displayName, email),
+      latestMessage: chat.latestMessage,
+      updatedAt:
+        chat.updatedAt ||
+        chat.latestMessage?.createdAt ||
+        new Date().toISOString(),
+    };
+  }
+
   const otherParticipant = chat.participants?.find(
     (p) => p._id !== currentUser?.id && p._id !== currentUser?._id,
   );
@@ -7,10 +25,14 @@ export const enrichChat = (chat, currentUser) => {
     ? otherParticipant.username
     : chat.chatName || "Unknown User";
 
-  const avatar =
-    otherParticipant?.profilePic?.url ||
-    chat.avatar ||
-    `https://ui-avatars.com/api/?name=${encodeURIComponent(chatName)}&background=random`;
+  const avatar = otherParticipant
+    ? otherParticipant.profilePic?.url ||
+      generateDefaultAvatar(
+        chatName,
+        otherParticipant.email || String(otherParticipant._id),
+      )
+    : chat.avatar ||
+      generateDefaultAvatar(chatName, chat.targetEmail || chatName);
 
   return {
     ...chat,

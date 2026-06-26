@@ -1,4 +1,5 @@
 const User = require("../models/User");
+const { generateDefaultAvatar } = require("../utils/avatar");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const redisClient = require("../config/redis");
@@ -47,6 +48,10 @@ const register = async (req, res, next) => {
       username,
       email: email.toLowerCase(),
       password: hashedPassword,
+      profilePic: {
+        url: generateDefaultAvatar(username, email.toLowerCase()),
+        publicId: null,
+      },
     });
 
     // 6. Generate 6-digit OTP and store in Redis (Expires in 15 mins / 900 secs)
@@ -131,6 +136,16 @@ const login = async (req, res, next) => {
         return res
           .status(401)
           .json({ message: "Please verify your email first." });
+
+      // Resolve any pending invites once the invited user logs in
+      try {
+        await resolveShadowMessages(user._id, user.email);
+      } catch (shadowError) {
+        console.warn(
+          "Shadow resolution on login skipped:",
+          shadowError.message,
+        );
+      }
 
       res.status(200).json({
         success: true,

@@ -14,6 +14,13 @@ const registerChatHandlers = (io, socket) => {
       const { chatId, receiverId, text, messageType, mediaUrl } = payload;
       const senderId = socket.userId;
 
+      if (receiverId && receiverId.toString() === senderId.toString()) {
+        return callback({
+          success: false,
+          error: "You cannot send messages to yourself.",
+        });
+      }
+
       // Security: Verify the user is actually a participant in this chat
       const chat = await Chat.findOne({ _id: chatId, participants: senderId });
       if (!chat) {

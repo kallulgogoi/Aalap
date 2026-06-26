@@ -56,13 +56,29 @@ const sendShadowMessage = async (req, res, next) => {
   try {
     const { targetEmail, text } = req.body;
 
+    if (!targetEmail?.trim()) {
+      return res.status(400).json({ message: "Target email is required." });
+    }
+
+    if (!text?.trim()) {
+      return res.status(400).json({ message: "Message text is required." });
+    }
+
+    const normalizedEmail = targetEmail.toLowerCase().trim();
+
+    if (normalizedEmail === req.user.email.toLowerCase()) {
+      return res.status(400).json({
+        message: "You cannot send an invite to yourself.",
+      });
+    }
+
     // Save the pending message
     const shadowMsg = await Message.create({
       chatId: null, // No chat container exists yet
       senderId: req.user._id,
       receiverId: null,
-      targetEmail: targetEmail.toLowerCase(),
-      text,
+      targetEmail: normalizedEmail,
+      text: text.trim(),
       status: "pending_registration",
     });
 
@@ -167,6 +183,12 @@ const sendMessage = async (req, res, next) => {
     const senderId = req.user._id;
     let targetChatId = chatId;
 
+    if (receiverId && receiverId.toString() === senderId.toString()) {
+      return res.status(400).json({
+        message: "You cannot send messages to yourself.",
+      });
+    }
+
     // Ghost chat flow: no chatId means this is a new conversation
     if (!targetChatId && receiverId) {
       // Find existing chat between these two users, or create one
@@ -204,6 +226,15 @@ const sendMessage = async (req, res, next) => {
     const resolvedReceiverId =
       receiverId ||
       chat.participants.find((p) => p.toString() !== senderId.toString());
+
+    if (
+      resolvedReceiverId &&
+      resolvedReceiverId.toString() === senderId.toString()
+    ) {
+      return res.status(400).json({
+        message: "You cannot send messages to yourself.",
+      });
+    }
 
     // Create the message
     const newMessage = await Message.create({

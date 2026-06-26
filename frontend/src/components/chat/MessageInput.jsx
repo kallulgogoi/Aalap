@@ -7,21 +7,22 @@ import {
   Smile,
   X,
   Loader2,
-  Image as ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import axiosInstance from "@/lib/axios";
-import { toast } from "sonner"; // For size limit warnings
+import { toast } from "sonner";
+import EmojiPicker from "./EmojiPicker";
 
 export default function MessageInput({ onSendMessage, disabled }) {
   const [text, setText] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
+  const inputRef = useRef(null);
 
-  // Set your max file size here (5MB = 5 * 1024 * 1024 bytes)
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   const handleImageSelect = (e) => {
@@ -43,9 +44,27 @@ export default function MessageInput({ onSendMessage, disabled }) {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const insertEmoji = (emoji) => {
+    const input = inputRef.current;
+    if (!input) {
+      setText((prev) => prev + emoji);
+      return;
+    }
+
+    const start = input.selectionStart ?? text.length;
+    const end = input.selectionEnd ?? text.length;
+    const nextValue = text.slice(0, start) + emoji + text.slice(end);
+    setText(nextValue);
+
+    requestAnimationFrame(() => {
+      input.focus();
+      const cursor = start + emoji.length;
+      input.setSelectionRange(cursor, cursor);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // 1. Guard clause: Ensure there is content to send
     if ((!text.trim() && !selectedImage) || disabled || isUploading) return;
 
     let finalMediaUrl = null;
@@ -64,34 +83,31 @@ export default function MessageInput({ onSendMessage, disabled }) {
           },
         );
 
-        // 2. Safeguard: Check if the backend actually returned the URL
         if (uploadRes.data && uploadRes.data.mediaUrl) {
           finalMediaUrl = uploadRes.data.mediaUrl;
         }
       } catch (error) {
         console.error("Upload error:", error);
         toast.error("Failed to upload image");
-        setIsUploading(false); // MUST reset state here
-        return; // Exit early
+        setIsUploading(false);
+        return;
       }
     }
 
-    // 3. Execution: Pass the data. If no image was selected, finalMediaUrl remains null
     try {
       await onSendMessage(text, finalMediaUrl);
     } catch (sendError) {
       toast.error("Failed to send message");
     } finally {
-      // 4. Cleanup: Always reset state regardless of success/fail of send
       setText("");
       clearImage();
       setIsUploading(false);
+      setShowEmojiPicker(false);
     }
   };
 
   return (
     <div className="p-4 bg-zinc-950 border-t border-zinc-800 shrink-0 flex flex-col gap-2">
-      {/* Image Preview Area */}
       {previewUrl && (
         <div className="relative w-20 h-20 ml-12 mb-2 group">
           <img
@@ -100,6 +116,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
             className="w-full h-full object-cover rounded-lg border border-zinc-700"
           />
           <button
+            type="button"
             onClick={clearImage}
             className="absolute -top-2 -right-2 bg-zinc-800 text-zinc-300 rounded-full p-1 shadow-md hover:bg-zinc-700 hover:text-white"
           >
@@ -112,7 +129,6 @@ export default function MessageInput({ onSendMessage, disabled }) {
         onSubmit={handleSubmit}
         className="flex items-end gap-2 max-w-4xl mx-auto w-full"
       >
-        {/* Hidden File Input */}
         <input
           type="file"
           accept="image/*"
@@ -122,7 +138,6 @@ export default function MessageInput({ onSendMessage, disabled }) {
           disabled={disabled || isUploading}
         />
 
-        {/* Attachment Button */}
         <Button
           type="button"
           variant="ghost"
@@ -134,20 +149,38 @@ export default function MessageInput({ onSendMessage, disabled }) {
           <Paperclip className="w-5 h-5" />
         </Button>
 
-        {/* Main Input Field */}
         <div className="relative flex-1">
           <Input
+            ref={inputRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={
               disabled ? "Select a chat to message..." : "Type a message..."
             }
             disabled={disabled || isUploading}
-            className="w-full bg-zinc-900 border-zinc-800 text-zinc-100 focus-visible:ring-indigo-500 min-h-[44px] rounded-2xl pl-4 pr-10"
+            className="w-full bg-zinc-900 border-zinc-800 text-zinc-100 focus-visible:ring-indigo-500 min-h-[44px] rounded-2xl pl-4 pr-12"
           />
+
+          <div className="absolute right-1 top-1/2 -translate-y-1/2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowEmojiPicker((prev) => !prev)}
+              className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800 h-9 w-9"
+              disabled={disabled || isUploading}
+              title="Add emoji"
+            >
+              <Smile className="w-5 h-5" />
+            </Button>
+            <EmojiPicker
+              open={showEmojiPicker}
+              onClose={() => setShowEmojiPicker(false)}
+              onSelect={insertEmoji}
+            />
+          </div>
         </div>
 
-        {/* Send Button */}
         <Button
           type="submit"
           size="icon"

@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const { generateDefaultAvatar } = require("../utils/avatar");
 
 const userSchema = new mongoose.Schema(
   {
@@ -30,11 +31,11 @@ const userSchema = new mongoose.Schema(
     profilePic: {
       url: {
         type: String,
-        default: "https://ui-avatars.com/api/?name=User&background=random", // Fallback default
+        default: null,
       },
       publicId: {
         type: String,
-        default: null, // Cloudinary cleanup algorithm
+        default: null,
       },
     },
     isVerified: {
@@ -46,6 +47,16 @@ const userSchema = new mongoose.Schema(
     timestamps: true, // Automatically adds createdAt and updatedAt
   },
 );
+
+userSchema.pre("save", function () {
+  if (!this.profilePic?.url) {
+    const seed = this.email || this.username;
+    this.profilePic = {
+      url: generateDefaultAvatar(this.username, seed),
+      publicId: null,
+    };
+  }
+});
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;

@@ -10,6 +10,10 @@ export const useSocket = () => {
   const addLiveMessage = useChatStore((state) => state.addLiveMessage);
   const updateUserPresence = useChatStore((state) => state.updateUserPresence);
   const markMessagesAsRead = useChatStore((state) => state.markMessagesAsRead);
+  const resolvePendingInvite = useChatStore((state) => state.resolvePendingInvite);
+  const updateParticipantProfile = useChatStore(
+    (state) => state.updateParticipantProfile,
+  );
   const { playNotification } = useAudio();
 
   useEffect(() => {
@@ -53,13 +57,32 @@ export const useSocket = () => {
       markMessagesAsRead(chatId, readBy);
     });
 
+    socketInstance.on("shadow_resolved", (payload) => {
+      resolvePendingInvite(payload);
+    });
+
+    socketInstance.on("profile_updated", (payload) => {
+      const currentUser = useAuthStore.getState().user;
+      const myId = String(currentUser?.id || currentUser?._id || "");
+
+      if (String(payload.userId) === myId) {
+        useAuthStore.getState().updateUser({
+          username: payload.username,
+          bio: payload.bio,
+          profilePic: payload.profilePic,
+        });
+      }
+
+      updateParticipantProfile(payload);
+    });
+
     setSocket(socketInstance);
 
     // Cleanup function: Disconnects the socket when the user logs out or closes the app
     return () => {
       socketInstance.disconnect();
     };
-  }, [token, addLiveMessage, updateUserPresence, markMessagesAsRead, playNotification]);
+  }, [token, addLiveMessage, updateUserPresence, markMessagesAsRead, resolvePendingInvite, updateParticipantProfile, playNotification]);
 
   return socket;
 };

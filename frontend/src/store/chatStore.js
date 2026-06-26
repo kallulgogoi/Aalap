@@ -3,11 +3,8 @@ import axiosInstance from "@/lib/axios";
 import { useAuthStore } from "./authStore";
 import { db } from "@/lib/db";
 import { dedupeMessages, normalizeMessageId } from "@/lib/messageUtils";
-import {
-  enrichChats,
-  prepareChatsForStorage,
-  sortChats,
-} from "@/lib/chatUtils";
+import { enrichChats, prepareChatsForStorage, sortChats } from "@/lib/chatUtils";
+import { generateDefaultAvatar, getAvatarUrl } from "@/lib/avatar";
 
 const persistChatsToDb = async (chats) => {
   try {
@@ -34,11 +31,26 @@ export const useChatStore = create((set, get) => ({
 
   setActiveChat: async (chat) => {
     set({ activeChat: chat });
-    if (chat && !chat.isGhost) {
-      await get().fetchMessages(chat._id);
-    } else {
+
+    if (!chat) {
       set({ messages: [] });
+      return;
     }
+
+    if (chat.isPendingInvite) {
+      set({
+        messages: chat.latestMessage ? [chat.latestMessage] : [],
+        isMessagesLoading: false,
+      });
+      return;
+    }
+
+    if (chat.isGhost) {
+      set({ messages: [] });
+      return;
+    }
+
+    await get().fetchMessages(chat._id);
   },
 
   setMessages: (messages) => set({ messages: dedupeMessages(messages) }),
@@ -47,14 +59,19 @@ export const useChatStore = create((set, get) => ({
 
   fetchChats: async () => {
     try {
-      const localChats = sortChats(await db.chats.orderBy("updatedAt").reverse().toArray());
+      const currentUser = useAuthStore.getState().user;
+      const localChats = sortChats(
+        enrichChats(
+          await db.chats.orderBy("updatedAt").reverse().toArray(),
+          currentUser,
+        ),
+      );
       if (localChats.length > 0) {
         set({ chats: localChats });
       }
 
       const response = await axiosInstance.get("/chats");
       if (response.data?.success) {
-        const currentUser = useAuthStore.getState().user;
         const chats = sortChats(enrichChats(response.data.chats, currentUser));
         set({ chats });
         await persistChatsToDb(chats);
@@ -65,6 +82,8 @@ export const useChatStore = create((set, get) => ({
   },
 
   fetchMessages: async (chatId) => {
+    if (!chatId || String(chatId).startsWith("pending_")) return;
+
     set({ isMessagesLoading: true });
 
     // 1. INSTANT LOAD: Try to get from local IndexedDB first
@@ -152,7 +171,7 @@ export const useChatStore = create((set, get) => ({
 
     await persistChatsToDb(get().chats);
   },
-  // When a user reads a chat, clear the badge
+
   clearUnreadCount: (chatId) => {
     const { chats } = get();
     const updatedChats = chats.map((chat) =>
@@ -160,6 +179,62 @@ export const useChatStore = create((set, get) => ({
     );
     set({ chats: updatedChats });
     void persistChatsToDb(updatedChats);
+  },
+
+  addPendingInviteChat: (shadowMessage, targetEmail) => {
+    const email = targetEmail.toLowerCase().trim();
+    const displayName = email.split("@")[0] || email;
+
+    const pendingChat = {
+      _id: `pending_${email}`,
+      isPendingInvite: true,
+      targetEmail: email,
+      chatName: displayName,
+      avatar: generateDefaultAvatar(displayName, email),
+      latestMessage: shadowMessage,
+      participants: [],
+      isOnline: false,
+      unreadCount: 0,
+      updatedAt: shadowMessage.createdAt || new Date().toISOString(),
+    };
+
+    set((state) => {
+      const withoutDuplicate = state.chats.filter(
+        (chat) => chat._id !== pendingChat._id,
+      );
+      const updatedChats = sortChats([pendingChat, ...withoutDuplicate]);
+      return { chats: updatedChats };
+    });
+
+    void persistChatsToDb(get().chats);
+    return pendingChat;
+  },
+
+  resolvePendingInvite: async ({ chatId, targetEmail } = {}) => {
+    const normalizedEmail = targetEmail?.toLowerCase().trim();
+    const { activeChat } = get();
+    const wasViewingPending =
+      activeChat?.isPendingInvite &&
+      (!normalizedEmail || activeChat.targetEmail === normalizedEmail);
+
+    if (normalizedEmail) {
+      set((state) => ({
+        chats: state.chats.filter(
+          (chat) =>
+            !chat.isPendingInvite || chat.targetEmail !== normalizedEmail,
+        ),
+        activeChat: wasViewingPending ? null : state.activeChat,
+      }));
+    }
+
+    await get().fetchChats();
+
+    if (wasViewingPending && chatId) {
+      const realChat = get().chats.find((chat) => chat._id === chatId);
+      if (realChat) {
+        await get().setActiveChat(realChat);
+      }
+    }
   },
 
   // For your Soft Delete / Restore feature
@@ -170,6 +245,62 @@ export const useChatStore = create((set, get) => ({
         msg._id === messageId ? { ...msg, ...updates } : msg,
       ),
     });
+  },
+
+  updateParticipantProfile: ({ userId, username, bio, profilePic }) => {
+    const currentUser = useAuthStore.getState().user;
+    const myId = String(currentUser?.id || currentUser?._id || "");
+    const targetId = String(userId);
+
+    const patchChat = (chat) => {
+      if (!chat || chat.isPendingInvite || chat.isGhost) return chat;
+
+      const participants = chat.participants?.map((participant) => {
+        const participantId =
+          typeof participant === "object" && participant !== null
+            ? participant._id
+            : participant;
+
+        if (String(participantId) !== targetId) return participant;
+
+        return {
+          ...participant,
+          username: username ?? participant.username,
+          bio: bio ?? participant.bio,
+          profilePic: profilePic ?? participant.profilePic,
+        };
+      });
+
+      const otherParticipant = participants?.find((participant) => {
+        const participantId =
+          typeof participant === "object" && participant !== null
+            ? participant._id
+            : participant;
+        return String(participantId) !== myId;
+      });
+
+      if (!otherParticipant || String(otherParticipant._id) !== targetId) {
+        return { ...chat, participants };
+      }
+
+      const chatName = username || otherParticipant.username || chat.chatName;
+
+      return {
+        ...chat,
+        participants,
+        chatName,
+        avatar: getAvatarUrl(otherParticipant),
+      };
+    };
+
+    const updatedChats = get().chats.map(patchChat);
+    const updatedActiveChat = patchChat(get().activeChat);
+
+    set({
+      chats: updatedChats,
+      activeChat: updatedActiveChat,
+    });
+    void persistChatsToDb(updatedChats);
   },
 
   updateUserPresence: (userId, isOnline) => {

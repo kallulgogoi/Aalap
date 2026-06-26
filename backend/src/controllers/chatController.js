@@ -1,7 +1,7 @@
-const Chat = require("../models/Chat");
-const User = require("../models/User");
 const Message = require("../models/Message");
+const Chat = require("../models/Chat");
 const redisClient = require("../config/redis");
+const { generateDefaultAvatar } = require("../utils/avatar");
 
 // Fetch all chats for the logged-in user to render the sidebar
 const fetchChats = async (req, res, next) => {
@@ -40,7 +40,45 @@ const fetchChats = async (req, res, next) => {
       })
     );
 
-    res.status(200).json({ success: true, chats: chatsWithMetadata });
+    // Pending shadow invites the current user has sent to unregistered emails
+    const pendingShadowMessages = await Message.find({
+      senderId: req.user._id,
+      status: "pending_registration",
+      chatId: null,
+    }).sort({ createdAt: -1 });
+
+    const pendingByEmail = new Map();
+    pendingShadowMessages.forEach((msg) => {
+      if (msg.targetEmail && !pendingByEmail.has(msg.targetEmail)) {
+        pendingByEmail.set(msg.targetEmail, msg);
+      }
+    });
+
+    const pendingInviteChats = Array.from(pendingByEmail.entries()).map(
+      ([email, msg]) => {
+        const displayName = email.split("@")[0];
+        return {
+          _id: `pending_${email}`,
+          isPendingInvite: true,
+          targetEmail: email,
+          chatName: displayName,
+          avatar: generateDefaultAvatar(displayName, email),
+          latestMessage: msg,
+          participants: [req.user._id],
+          isOnline: false,
+          unreadCount: 0,
+          updatedAt: msg.createdAt,
+        };
+      },
+    );
+
+    const allChats = [...chatsWithMetadata, ...pendingInviteChats].sort(
+      (a, b) =>
+        new Date(b.latestMessage?.createdAt || b.updatedAt || 0) -
+        new Date(a.latestMessage?.createdAt || a.updatedAt || 0),
+    );
+
+    res.status(200).json({ success: true, chats: allChats });
   } catch (error) {
     next(error);
   }
@@ -52,6 +90,12 @@ const accessChat = async (req, res, next) => {
     const { targetUserId } = req.body;
     if (!targetUserId)
       return res.status(400).json({ message: "Target User ID required." });
+
+    if (targetUserId.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        message: "You cannot start a chat with yourself.",
+      });
+    }
 
     let existingChat = await Chat.findOne({
       participants: { $all: [req.user._id, targetUserId] },

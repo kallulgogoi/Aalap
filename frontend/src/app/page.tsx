@@ -7,8 +7,10 @@ import { LogOut, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // Importing the actual UI components we built
+import ProfileSettingsDialog from "@/components/profile/ProfileSettingsDialog";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
+import { getAvatarUrl } from "@/lib/avatar";
 
 export default function MainChatDashboard() {
   const user = useAuthStore((state) => state.user);
@@ -26,19 +28,22 @@ export default function MainChatDashboard() {
       <div className="w-full max-w-[380px] border-r border-zinc-800 bg-zinc-950/50 flex flex-col shrink-0 transition-all duration-300">
         {/* Header / Profile Area */}
         <div className="h-16 border-b border-zinc-800 flex items-center justify-between px-4 shrink-0 bg-zinc-950">
-          <div className="flex items-center gap-3">
-            <img
-              src={
-                user?.profilePic?.url ||
-                "https://ui-avatars.com/api/?name=User&background=random"
-              }
-              alt="Profile"
-              className="w-10 h-10 rounded-full object-cover border border-zinc-700"
-            />
-            <span className="font-semibold tracking-tight text-zinc-100">
-              {user?.username}
-            </span>
-          </div>
+          <ProfileSettingsDialog>
+            <button
+              type="button"
+              className="flex items-center gap-3 text-left rounded-lg px-1 py-1 hover:bg-zinc-900/60 transition-colors"
+              title="Edit profile"
+            >
+              <img
+                src={getAvatarUrl(user)}
+                alt="Profile"
+                className="w-10 h-10 rounded-full object-cover border border-zinc-700"
+              />
+              <span className="font-semibold tracking-tight text-zinc-100">
+                {user?.username}
+              </span>
+            </button>
+          </ProfileSettingsDialog>
           <Button
             variant="ghost"
             size="icon"

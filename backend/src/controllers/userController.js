@@ -2,6 +2,7 @@ const User = require("../models/User");
 const fs = require("fs");
 const { uploadImage, deleteImage } = require("../services/cloudinary");
 const redisClient = require("../config/redis");
+const { getIO } = require("../sockets/index");
 
 // Search for a user by email to start a chat
 const searchUser = async (req, res, next) => {
@@ -12,7 +13,15 @@ const searchUser = async (req, res, next) => {
         .status(400)
         .json({ message: "Email query parameter required." });
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select(
+    const normalizedEmail = email.toLowerCase().trim();
+
+    if (normalizedEmail === req.user.email.toLowerCase()) {
+      return res.status(400).json({
+        message: "You cannot start a chat with yourself.",
+      });
+    }
+
+    const user = await User.findOne({ email: normalizedEmail }).select(
       "-password",
     );
 
@@ -63,10 +72,19 @@ const searchUsers = async (req, res) => {
 const updateProfile = async (req, res, next) => {
   try {
     const { username, bio } = req.body;
-    let updateFields = {};
+    const updateFields = {};
 
-    if (username) updateFields.username = username;
-    if (bio) updateFields.bio = bio;
+    if (typeof username === "string" && username.trim()) {
+      updateFields.username = username.trim();
+    }
+
+    if (typeof bio === "string") {
+      updateFields.bio = bio.trim();
+    }
+
+    if (!Object.keys(updateFields).length && !req.file) {
+      return res.status(400).json({ message: "No profile changes provided." });
+    }
 
     // If the user uploaded a new profile picture via Multer
     if (req.file) {
@@ -91,6 +109,17 @@ const updateProfile = async (req, res, next) => {
       { $set: updateFields },
       { new: true, runValidators: true },
     ).select("-password");
+
+    try {
+      getIO().emit("profile_updated", {
+        userId: updatedUser._id,
+        username: updatedUser.username,
+        bio: updatedUser.bio,
+        profilePic: updatedUser.profilePic,
+      });
+    } catch (socketErr) {
+      console.warn("Profile update socket broadcast skipped:", socketErr.message);
+    }
 
     res.status(200).json({ success: true, user: updatedUser });
   } catch (error) {

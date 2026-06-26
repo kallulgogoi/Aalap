@@ -9,7 +9,9 @@ import { MoreVertical, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGlobalSocket } from "@/context/SocketContext";
 import { cn } from "@/lib/utils";
+import { getAvatarUrl } from "@/lib/avatar";
 import { dedupeMessages, normalizeMessageId } from "@/lib/messageUtils";
+import { toast } from "sonner";
 
 // Importing the modular components we built earlier
 import MessageBubble from "./MessageBubble";
@@ -21,12 +23,18 @@ export default function ChatArea() {
   const { user } = useAuthStore();
 
   // Custom hook: Auto-scrolls to bottom whenever 'messages' array changes
-  const scrollRef = useChatScroll(messages);
+  const scrollRef = useChatScroll(messages, activeChat?._id);
   const socket = useGlobalSocket();
 
   // Mark incoming messages as read when activeChat changes or new messages arrive
   useEffect(() => {
-    if (!socket || !activeChat || activeChat.isGhost || !messages.length)
+    if (
+      !socket ||
+      !activeChat ||
+      activeChat.isGhost ||
+      activeChat.isPendingInvite ||
+      !messages.length
+    )
       return;
 
     // Resolve the other participant ID
@@ -94,6 +102,16 @@ export default function ChatArea() {
   }, [socket]);
 
   const handleSendMessage = async (input, mediaUrl = null) => {
+    const myId = user?.id || user?._id;
+
+    if (
+      activeChat.receiverId &&
+      String(activeChat.receiverId) === String(myId)
+    ) {
+      toast.error("You cannot send messages to yourself.");
+      return;
+    }
+
     try {
       const isGhost = activeChat.isGhost;
       const payload = isGhost
@@ -124,6 +142,9 @@ export default function ChatArea() {
       }
     } catch (error) {
       console.error("Failed to send message", error);
+      toast.error(
+        error.response?.data?.message || "Failed to send message.",
+      );
     }
   };
   // Inside ChatArea.jsx
@@ -169,10 +190,7 @@ export default function ChatArea() {
       <div className="h-16 border-b border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10 shadow-sm">
         <div className="flex items-center gap-3">
           <img
-            src={
-              activeChat.avatar ||
-              "https://ui-avatars.com/api/?name=Chat&background=random"
-            }
+            src={getAvatarUrl(activeChat)}
             alt="Avatar"
             className="w-10 h-10 rounded-full object-cover"
           />
@@ -183,12 +201,18 @@ export default function ChatArea() {
             <p
               className={cn(
                 "text-xs transition-colors",
-                activeChat.isOnline
-                  ? "text-green-400 font-medium"
-                  : "text-zinc-500",
+                activeChat.isPendingInvite
+                  ? "text-amber-400 font-medium"
+                  : activeChat.isOnline
+                    ? "text-green-400 font-medium"
+                    : "text-zinc-500",
               )}
             >
-              {activeChat.isOnline ? "Online" : "Offline"}
+              {activeChat.isPendingInvite
+                ? "Invite pending"
+                : activeChat.isOnline
+                  ? "Online"
+                  : "Offline"}
             </p>
           </div>
         </div>
@@ -232,7 +256,13 @@ export default function ChatArea() {
       </div>
 
       {/* Input Footer Area */}
-      <MessageInput onSendMessage={handleSendMessage} disabled={!activeChat} />
+      {activeChat.isPendingInvite ? (
+        <div className="border-t border-zinc-800 bg-zinc-950/80 px-6 py-4 text-center text-sm text-zinc-400">
+          Waiting for <strong className="text-zinc-200">{activeChat.targetEmail}</strong> to join. You can message them once they log in.
+        </div>
+      ) : (
+        <MessageInput onSendMessage={handleSendMessage} disabled={!activeChat} />
+      )}
     </div>
   );
 }
