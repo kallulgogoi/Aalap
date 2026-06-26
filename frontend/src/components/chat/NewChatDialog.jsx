@@ -4,7 +4,7 @@ import { useState } from "react";
 import axiosInstance from "@/lib/axios";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
-import { Search, Plus, Loader2, Send, Mail } from "lucide-react";
+import { Search, Plus, Loader2, Send, Mail, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-export default function NewChatDialog() {
+export default function NewChatDialog({ children }) {
   const [emailQuery, setEmailQuery] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -80,9 +80,7 @@ export default function NewChatDialog() {
         }
       } else if (Array.isArray(data)) {
         setResults(
-          data.filter(
-            (u) => !isSelfTarget(u._id) && !isSelfTarget(u.email),
-          ),
+          data.filter((u) => !isSelfTarget(u._id) && !isSelfTarget(u.email)),
         );
       } else if (data?._id) {
         if (isSelfTarget(data._id) || isSelfTarget(data.email)) {
@@ -187,13 +185,15 @@ export default function NewChatDialog() {
       }}
     >
       <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-zinc-800 shrink-0"
-        >
-          <Plus className="w-5 h-5" />
-        </Button>
+        {children || (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-zinc-400 hover:text-zinc-100 bg-zinc-900 border border-zinc-800 shrink-0"
+          >
+            <Plus className="w-5 h-5" />
+          </Button>
+        )}
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">

@@ -1,11 +1,23 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
 import { useChatScroll } from "@/hooks/useChatScroll";
 import axiosInstance from "@/lib/axios";
-import { MoreVertical, Loader2, Users, User, Clock } from "lucide-react";
+import {
+  MoreVertical,
+  Loader2,
+  Users,
+  Clock,
+  ArrowLeft,
+  Phone,
+  Video,
+  Info,
+  Pin,
+  Search,
+  Menu,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useGlobalSocket } from "@/context/SocketContext";
 import { cn } from "@/lib/utils";
@@ -14,13 +26,31 @@ import { dedupeMessages, normalizeMessageId } from "@/lib/messageUtils";
 import { toast } from "sonner";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function ChatArea() {
-  const { activeChat, messages, addLiveMessage, isMessagesLoading } =
-    useChatStore();
+  const {
+    activeChat,
+    setActiveChat,
+    messages,
+    addLiveMessage,
+    isMessagesLoading,
+  } = useChatStore();
   const { user } = useAuthStore();
   const scrollRef = useChatScroll(messages, activeChat?._id);
   const socket = useGlobalSocket();
+  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     if (
@@ -151,16 +181,44 @@ export default function ChatArea() {
     }
   };
 
-  if (!activeChat) return null;
+  if (!activeChat) {
+    return (
+      <div className="hidden md:flex flex-1 items-center justify-center bg-gradient-to-b from-zinc-950 to-zinc-900">
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="w-20 h-20 rounded-full bg-zinc-800/30 flex items-center justify-center mb-4 border border-zinc-700/30">
+            <Users className="w-10 h-10 text-zinc-600" />
+          </div>
+          <p className="text-zinc-400 font-medium">No chat selected</p>
+          <p className="text-sm text-zinc-500 mt-1">
+            Select a conversation to start chatting!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const visibleMessages = dedupeMessages(messages);
 
   return (
-    <div className="flex flex-col h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
-      {/* Sticky Header with Glass Effect */}
-      <div className="h-16 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-between px-6 shrink-0 z-10">
-        <div className="flex items-center gap-4">
-          <div className="relative">
+    <div className="flex flex-col h-full bg-gradient-to-b from-zinc-950 to-zinc-900 flex-1 relative w-full">
+      {/* Sticky Header with Glass Effect - Telegram Style */}
+      <div className="h-16 border-b border-zinc-800/50 bg-zinc-950/80 backdrop-blur-xl flex items-center justify-between px-4 shrink-0 z-10">
+        <div className="flex items-center gap-3">
+          {/* Mobile Back Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setActiveChat(null)}
+            className="md:hidden shrink-0 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 -ml-2 transition-all"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+
+          {/* Avatar with status */}
+          <div
+            className="relative cursor-pointer"
+            onClick={() => setShowInfo(true)}
+          >
             <div
               className={cn(
                 "absolute inset-0 rounded-full blur-xl transition-opacity duration-300",
@@ -172,11 +230,11 @@ export default function ChatArea() {
             <img
               src={getAvatarUrl(activeChat)}
               alt="Avatar"
-              className="w-11 h-11 rounded-full object-cover border-2 border-zinc-700/50 relative z-10"
+              className="w-10 h-10 md:w-11 md:h-11 rounded-full object-cover border-2 border-zinc-700/50 relative z-10"
             />
           </div>
-          <div>
-            <h2 className="font-semibold text-zinc-100 leading-tight text-lg">
+          <div onClick={() => setShowInfo(true)} className="cursor-pointer">
+            <h2 className="font-semibold text-zinc-100 leading-tight text-base md:text-lg">
               {activeChat.chatName}
             </h2>
             <div className="flex items-center gap-1.5">
@@ -203,17 +261,65 @@ export default function ChatArea() {
             </div>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200"
-        >
-          <MoreVertical className="w-5 h-5" />
-        </Button>
+
+        {/* Header Actions - Telegram Style */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200 hidden sm:flex"
+          >
+            <Search className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200 hidden sm:flex"
+          >
+            <Phone className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200 hidden sm:flex"
+          >
+            <Video className="w-5 h-5" />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl transition-all duration-200"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-zinc-900 border-zinc-800 text-zinc-100 min-w-[200px]">
+              <DropdownMenuItem
+                onClick={() => setShowInfo(true)}
+                className="hover:bg-zinc-800 cursor-pointer flex items-center gap-2"
+              >
+                <Info className="w-4 h-4" />
+                View Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer flex items-center gap-2">
+                <Pin className="w-4 h-4" />
+                Pin Chat
+              </DropdownMenuItem>
+              <DropdownMenuItem className="hover:bg-zinc-800 cursor-pointer flex items-center gap-2 text-red-400">
+                <span>Delete Chat</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {/* Scrollable Message List */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-2">
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto p-4 md:p-6 space-y-2"
+      >
         {isMessagesLoading ? (
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-3">
@@ -271,6 +377,76 @@ export default function ChatArea() {
           disabled={!activeChat}
         />
       )}
+
+      {/* Profile Info Dialog */}
+      <Dialog open={showInfo} onOpenChange={setShowInfo}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 border-zinc-800 text-zinc-100">
+          <DialogHeader>
+            <DialogTitle>Profile</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center py-4">
+            <div className="relative">
+              <img
+                src={getAvatarUrl(activeChat)}
+                alt="Profile"
+                className="w-24 h-24 rounded-full object-cover border-2 border-zinc-700"
+              />
+              {activeChat.isOnline && (
+                <span className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-zinc-950" />
+              )}
+            </div>
+            <h3 className="text-xl font-semibold text-zinc-100 mt-4">
+              {activeChat.chatName}
+            </h3>
+            <p className="text-sm text-zinc-400 mt-1">
+              {activeChat.isOnline ? "Online" : "Offline"}
+            </p>
+            {activeChat.bio && (
+              <p className="text-sm text-zinc-300 mt-2 text-center">
+                {activeChat.bio}
+              </p>
+            )}
+            <div className="w-full mt-6 pt-6 border-t border-zinc-800">
+              <div className="flex justify-around text-center">
+                <div>
+                  <p className="text-2xl font-semibold text-zinc-100">
+                    {
+                      messages.filter((m) => {
+                        const sid =
+                          typeof m.senderId === "object"
+                            ? m.senderId?._id
+                            : m.senderId;
+                        return (
+                          sid === activeChat._id ||
+                          sid === activeChat.receiverId
+                        );
+                      }).length
+                    }
+                  </p>
+                  <p className="text-xs text-zinc-500">Messages</p>
+                </div>
+                <div>
+                  <p className="text-2xl font-semibold text-zinc-100">
+                    {
+                      messages.filter((m) => {
+                        const sid =
+                          typeof m.senderId === "object"
+                            ? m.senderId?._id
+                            : m.senderId;
+                        return (
+                          (sid === user?.id || sid === user?._id) &&
+                          m.status === "read"
+                        );
+                      }).length
+                    }
+                  </p>
+                  <p className="text-xs text-zinc-500">Read</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
