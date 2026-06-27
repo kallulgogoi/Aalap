@@ -27,6 +27,7 @@ export const useSocket = () => {
       {
         auth: { token },
         reconnection: true,
+        transports: ["websocket"],
       },
     );
 

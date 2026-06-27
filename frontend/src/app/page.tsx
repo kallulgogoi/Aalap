@@ -128,7 +128,7 @@ export default function MainChatDashboard() {
   };
 
   return (
-    <div className="flex h-screen w-full bg-[#0E1621] overflow-hidden">
+    <div className="flex h-[100dvh] w-full bg-[#0E1621] overflow-hidden">
       {/* Account Drawer Overlay */}
       {isAccountDrawerOpen && (
         <div

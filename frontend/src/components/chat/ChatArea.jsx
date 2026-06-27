@@ -59,7 +59,8 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
     }
   };
   
-  const scrollRef = useChatScroll(messages, activeChat?._id, handleLoadMore);
+  const visibleMessages = dedupeMessages([...messages, ...optimisticMsgs]);
+  const scrollRef = useChatScroll(visibleMessages, activeChat?._id, handleLoadMore);
   const socket = useGlobalSocket();
   const [showInfo, setShowInfo] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
@@ -302,8 +303,6 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
       </div>
     );
   }
-
-  const visibleMessages = dedupeMessages([...messages, ...optimisticMsgs]);
 
   return (
     <div className="flex flex-col h-full flex-1 relative w-full">
