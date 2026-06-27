@@ -325,7 +325,7 @@ export default function MainChatDashboard() {
       {/* Dialogs */}
       <ProfileDialog
         open={profileOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           setProfileOpen(open);
           if (!open && !settingsOpen) setMobileTab("chats");
         }}
@@ -333,7 +333,7 @@ export default function MainChatDashboard() {
 
       <SettingsDialog
         open={settingsOpen}
-        onOpenChange={(open) => {
+        onOpenChange={(open: boolean) => {
           setSettingsOpen(open);
           if (!open && !profileOpen) setMobileTab("chats");
         }}
