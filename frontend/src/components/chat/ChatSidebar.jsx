@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useChatStore } from "@/store/chatStore";
 import { useAuthStore } from "@/store/authStore";
+import { useGlobalSocket } from "@/context/SocketContext";
 import {
   Search,
   Clock,
@@ -22,8 +23,21 @@ import { ChatListSkeleton } from "@/components/ui/ChatSkeleton";
 export default function ChatSidebar({ onChatSelect, isLoading = false }) {
   const { chats, activeChat, setActiveChat, clearUnreadCount } = useChatStore();
   const { user } = useAuthStore();
+  const socket = useGlobalSocket();
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
+  const [typingChats, setTypingChats] = useState({});
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleUserTyping = ({ chatId, isTyping }) => {
+      setTypingChats((prev) => ({ ...prev, [chatId]: isTyping }));
+    };
+    socket.on("user_typing", handleUserTyping);
+    return () => {
+      socket.off("user_typing", handleUserTyping);
+    };
+  }, [socket]);
 
   const currentUserId = user?.id || user?._id;
 
@@ -118,6 +132,9 @@ export default function ChatSidebar({ onChatSelect, isLoading = false }) {
 
             if (chat.isPendingInvite) {
               messagePreview = "Invite sent — waiting to join";
+            } else if (typingChats[chat._id]) {
+              messagePreview = <span className="text-telegram font-medium italic">typing...</span>;
+              isMe = false;
             } else if (chat.latestMessage) {
               const msg = chat.latestMessage;
               messagePreview = msg.isDeleted
