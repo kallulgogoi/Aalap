@@ -8,7 +8,7 @@ import axiosInstance from "@/lib/axios";
 import { toast } from "sonner";
 import EmojiPicker from "./EmojiPicker";
 
-export default function MessageInput({ onSendMessage, disabled }) {
+export default function MessageInput({ onSendMessage, onTyping, disabled }) {
   const [text, setText] = useState("");
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -16,6 +16,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -57,9 +58,27 @@ export default function MessageInput({ onSendMessage, disabled }) {
     });
   };
 
+  const handleTextChange = (e) => {
+    setText(e.target.value);
+    if (onTyping) {
+      onTyping(true);
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        onTyping(false);
+      }, 2000);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if ((!text.trim() && !selectedImage) || disabled || isUploading) return;
+
+    if (onTyping && typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      onTyping(false);
+    }
 
     let finalMediaUrl = null;
 
@@ -148,7 +167,7 @@ export default function MessageInput({ onSendMessage, disabled }) {
           <Input
             ref={inputRef}
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={handleTextChange}
             placeholder={
               disabled ? "Select a chat to message..." : "Type a message..."
             }

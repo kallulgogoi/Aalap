@@ -129,8 +129,8 @@ export default function ChatDetailsPanel({ onClose, isOpen }) {
   return (
     <aside
       className={cn(
-        "xl:flex w-[360px] shrink-0 flex-col border-l border-white/5 bg-[rgba(10,14,28,0.92)] backdrop-blur-2xl transition-all duration-300",
-        isOpen ? "flex" : "hidden xl:flex",
+        "fixed inset-y-0 right-0 z-50 xl:relative xl:z-auto w-full sm:w-[360px] xl:flex shrink-0 flex-col border-l border-white/5 bg-[rgba(10,14,28,0.95)] xl:bg-[rgba(10,14,28,0.92)] backdrop-blur-3xl xl:backdrop-blur-2xl transition-all duration-300",
+        isOpen === false ? "hidden" : "flex"
       )}
     >
       {/* Header */}

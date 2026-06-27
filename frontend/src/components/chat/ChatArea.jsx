@@ -53,6 +53,44 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
   const scrollRef = useChatScroll(messages, activeChat?._id);
   const socket = useGlobalSocket();
   const [showInfo, setShowInfo] = useState(false);
+  const [isUserTyping, setIsUserTyping] = useState(false);
+
+  const groupMessagesByDate = (msgs) => {
+    const groups = [];
+    let currentDate = "";
+    let currentGroup = [];
+    
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    msgs.forEach((msg) => {
+      const msgDate = new Date(msg.createdAt || Date.now());
+      let displayDate = "";
+      
+      if (msgDate.toDateString() === today.toDateString()) {
+        displayDate = "Today";
+      } else if (msgDate.toDateString() === yesterday.toDateString()) {
+        displayDate = "Yesterday";
+      } else {
+        displayDate = msgDate.toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+      }
+      
+      if (displayDate !== currentDate) {
+        if (currentGroup.length > 0) {
+          groups.push({ date: currentDate, messages: currentGroup });
+        }
+        currentDate = displayDate;
+        currentGroup = [msg];
+      } else {
+        currentGroup.push(msg);
+      }
+    });
+    if (currentGroup.length > 0) {
+      groups.push({ date: currentDate, messages: currentGroup });
+    }
+    return groups;
+  };
 
   useEffect(() => {
     if (
@@ -109,16 +147,36 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
       useChatStore.getState().updateMessage(messageId, { isDeleted: false });
     };
 
+    const handleUserTyping = ({ chatId, senderId, isTyping }) => {
+      if (activeChat && activeChat._id === chatId) {
+        setIsUserTyping(isTyping);
+      }
+    };
+
     socket.on("receipts_updated", handleReceiptsUpdated);
     socket.on("message_deleted", handleRemoteDelete);
     socket.on("message_restored", handleRemoteRestore);
+    socket.on("user_typing", handleUserTyping);
 
     return () => {
       socket.off("receipts_updated", handleReceiptsUpdated);
       socket.off("message_deleted", handleRemoteDelete);
       socket.off("message_restored", handleRemoteRestore);
+      socket.off("user_typing", handleUserTyping);
     };
-  }, [socket]);
+  }, [socket, activeChat]);
+
+  const handleTyping = (isTyping) => {
+    if (!socket || !activeChat || activeChat.isGhost || activeChat.isPendingInvite) return;
+    const otherParticipant = activeChat.participants?.find((p) => {
+      const id = typeof p === "object" && p !== null ? p._id : p;
+      return String(id) !== String(user?.id) && String(id) !== String(user?._id);
+    });
+    const receiverId = typeof otherParticipant === "object" && otherParticipant !== null ? otherParticipant._id : otherParticipant;
+    if (receiverId) {
+      socket.emit("typing", { receiverId, chatId: activeChat._id, isTyping });
+    }
+  };
 
   // INJECTED FIX: Handle ghost chat transition smoothly
   const handleSendMessage = async (input, mediaUrl = null) => {
@@ -256,7 +314,9 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
               {activeChat.chatName}
             </h2>
             <div className="flex items-center gap-1.5">
-              {activeChat.isPendingInvite ? (
+              {isUserTyping ? (
+                <span className="text-xs text-telegram font-medium italic">typing...</span>
+              ) : activeChat.isPendingInvite ? (
                 <>
                   <Clock className="w-3 h-3 text-amber-400" />
                   <span className="text-xs text-amber-400 font-medium">
@@ -354,24 +414,44 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
               </p>
             </div>
           ) : (
-            visibleMessages.map((msg, index) => {
-              const senderIdStr =
-                typeof msg.senderId === "object" && msg.senderId !== null
-                  ? msg.senderId._id
-                  : msg.senderId;
-              const isMe =
-                senderIdStr === user?.id || senderIdStr === user?._id;
-              return (
-                <MessageBubble
-                  key={normalizeMessageId(msg._id) || `msg-${index}`}
-                  message={msg}
-                  isMe={isMe}
-                  activeChat={activeChat}
-                  onDelete={handleDeleteMessage}
-                  onRestore={handleRestoreMessage}
-                />
-              );
-            })
+            <div className="space-y-6 pb-2">
+              {groupMessagesByDate(visibleMessages).map((group, gIndex) => (
+                <div key={`group-${gIndex}`} className="space-y-2">
+                  <div className="flex justify-center sticky top-2 z-10 my-4">
+                    <span className="px-3 py-1 text-xs font-medium bg-zinc-900/80 text-zinc-300 rounded-full border border-white/10 backdrop-blur-md shadow-sm">
+                      {group.date}
+                    </span>
+                  </div>
+                  {group.messages.map((msg, index) => {
+                    const senderIdStr =
+                      typeof msg.senderId === "object" && msg.senderId !== null
+                        ? msg.senderId._id
+                        : msg.senderId;
+                    const isMe =
+                      senderIdStr === user?.id || senderIdStr === user?._id;
+                    return (
+                      <MessageBubble
+                        key={normalizeMessageId(msg._id) || `msg-${index}`}
+                        message={msg}
+                        isMe={isMe}
+                        activeChat={activeChat}
+                        onDelete={handleDeleteMessage}
+                        onRestore={handleRestoreMessage}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+              {isUserTyping && (
+                <div className="flex items-center gap-2 p-2 max-w-[85%] self-start mt-2">
+                  <div className="flex items-center gap-1.5 bg-zinc-800/80 backdrop-blur-sm rounded-2xl px-4 py-2.5 border border-white/5 rounded-tl-sm w-fit shadow-md">
+                    <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                </div>
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -393,6 +473,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
       ) : (
         <MessageInput
           onSendMessage={handleSendMessage}
+          onTyping={handleTyping}
           disabled={!activeChat}
         />
       )}
