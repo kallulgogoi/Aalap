@@ -19,7 +19,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-export default function MessageBubble({ message, isMe, onDelete, onRestore, activeChat }) {
+export default function MessageBubble({
+  message,
+  isMe,
+  onDelete,
+  onRestore,
+  activeChat,
+}) {
   const [showUndo, setShowUndo] = useState(false);
 
   useEffect(() => {
@@ -80,16 +86,16 @@ export default function MessageBubble({ message, isMe, onDelete, onRestore, acti
     );
   }
 
-  // FIX: Safely extract sender details for the avatar generator and display name
-  // First, check if senderId is already a populated object from the server
   let senderObj =
     typeof message.senderId === "object" && message.senderId !== null
       ? message.senderId
       : null;
 
-  // Fallback: If senderId is a plain string, look up the sender from activeChat's participants
   if (!senderObj && activeChat?.participants?.length) {
-    const senderIdStr = typeof message.senderId === "string" ? message.senderId : String(message.senderId);
+    const senderIdStr =
+      typeof message.senderId === "string"
+        ? message.senderId
+        : String(message.senderId);
     const matchedParticipant = activeChat.participants.find((p) => {
       const pId = typeof p === "object" && p !== null ? p._id : p;
       return String(pId) === senderIdStr;
@@ -99,7 +105,6 @@ export default function MessageBubble({ message, isMe, onDelete, onRestore, acti
     }
   }
 
-  // Final fallback
   if (!senderObj) {
     senderObj = { username: message.senderName };
   }

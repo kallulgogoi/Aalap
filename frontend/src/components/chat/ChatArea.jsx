@@ -187,7 +187,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
     }
   };
 
-  // INJECTED FIX: Handle ghost chat transition smoothly
+  // Handle ghost chat transition smoothly
   const handleSendMessage = async (input, mediaUrl = null) => {
     const myId = user?.id || user?._id;
 
@@ -211,10 +211,10 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
       const newMsg = data.message || data;
 
       if (isGhost && data.chatId) {
-        // Step 1: Refresh the sidebar to get the new chat object
+        // Refresh the sidebar to get the new chat object
         await useChatStore.getState().fetchChats();
 
-        // Step 2: Find the real chat in the newly fetched store
+        // Find the real chat in the newly fetched store
         const realChat = useChatStore
           .getState()
           .chats.find((c) => c._id === data.chatId);
@@ -233,7 +233,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
           await useChatStore.getState().setActiveChat(fallbackChat);
         }
       } else {
-        // Normal message flow
+       
         addLiveMessage(newMsg);
       }
     } catch (error) {
@@ -296,7 +296,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
             <ArrowLeft className="w-5 h-5" />
           </Button>
 
-          {/* Avatar with status */}
+          
           <div
             className="relative cursor-pointer"
             onClick={() => {
@@ -349,7 +349,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
           </div>
         </div>
 
-        {/* Header Actions - Telegram Style */}
+        {/* Header Actions */}
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -492,7 +492,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
         />
       )}
 
-      {/* Profile Info Dialog - mobile / tablet only */}
+      {/* Profile Info Dialog */}
       <Dialog open={showInfo} onOpenChange={setShowInfo}>
         <DialogContent className="sm:max-w-md glass-panel-strong border-telegram text-zinc-100 xl:hidden rounded-[32px]">
           <DialogHeader>

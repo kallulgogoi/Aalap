@@ -34,7 +34,6 @@ export default function NewChatDialog({ children }) {
   const [isInviting, setIsInviting] = useState(false);
   const [inviteText, setInviteText] = useState("");
 
-  // INJECTED FIX: Extracted 'chats' to check for existing conversations
   const { chats, setActiveChat, addPendingInviteChat } = useChatStore();
   const { user } = useAuthStore();
 
@@ -113,14 +112,14 @@ export default function NewChatDialog({ children }) {
     }
   };
 
-  // INJECTED FIX: Updated startGhostChat
+  //  Updated startGhostChat
   const startGhostChat = (targetUser) => {
     if (isSelfTarget(targetUser._id) || isSelfTarget(targetUser.email)) {
       toast.error("You cannot start a chat with yourself.");
       return;
     }
 
-    // Check if we ALREADY have an active chat with this user
+    // Check if we already have an active chat with this user
     const existingChat = chats.find((chat) => {
       if (chat.isPendingInvite || chat.isGhost) return false;
 
@@ -131,7 +130,7 @@ export default function NewChatDialog({ children }) {
       });
     });
 
-    // If a chat already exists, just open it!
+    // if a chat already exists, just open it
     if (existingChat) {
       setActiveChat(existingChat);
       setOpen(false);
@@ -139,7 +138,7 @@ export default function NewChatDialog({ children }) {
       return;
     }
 
-    // Otherwise, start a genuinely new ghost chat
+    // Otherwise, start a new ghost chat
     const ghostChat = {
       _id: "new_ghost_" + Date.now(),
       chatName: targetUser.username,
