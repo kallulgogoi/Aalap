@@ -4,6 +4,13 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "../store/authStore";
 import { useRouter, usePathname } from "next/navigation";
 
+const PUBLIC_ROUTES = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+];
+
 export const AuthProvider = ({ children }) => {
   const [isHydrated, setIsHydrated] = useState(false);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
@@ -17,18 +24,19 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     if (!isHydrated) return;
 
-    const isPublicRoute =
-      pathname.startsWith("/login") ||
-      pathname.startsWith("/register") ||
-      pathname.startsWith("/forgot-password") ||
-      pathname.startsWith("/reset-password");
+    const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+      pathname.startsWith(route),
+    );
 
-    // If logged out and trying to see the chat
+    // If logged out and trying to see a private page
     if (!isAuthenticated && !isPublicRoute) {
       router.push("/login");
     }
-    // If logged in and trying to see the login page
-    else if (isAuthenticated && isPublicRoute) {
+    // If logged in and trying to see an auth page
+    else if (
+      isAuthenticated &&
+      (pathname.startsWith("/login") || pathname.startsWith("/register"))
+    ) {
       router.push("/");
     }
   }, [isAuthenticated, pathname, isHydrated, router]);
