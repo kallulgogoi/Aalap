@@ -308,7 +308,10 @@ export default function MainChatDashboard() {
 
       {/* Chat Details Panel */}
       {activeChat && detailsOpen && (
-        <ChatDetailsPanel onClose={() => setDetailsOpen(false)} />
+        <ChatDetailsPanel
+          isOpen={detailsOpen}
+          onClose={() => setDetailsOpen(false)}
+        />
       )}
 
       {/* Mobile Tab Bar */}
