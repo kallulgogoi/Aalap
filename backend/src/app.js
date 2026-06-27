@@ -6,10 +6,10 @@ const { errorHandler } = require("./middlewares/errorMiddleware");
 
 const app = express();
 
-const connectDB = require("./config/db");
-const { connectRabbitMQ } = require("./config/rabbitmq");
-connectDB();
-connectRabbitMQ();
+// const connectDB = require("./config/db");
+// const { connectRabbitMQ } = require("./config/rabbitmq");
+// connectDB();
+// connectRabbitMQ();
 
 app.use(helmet());
 

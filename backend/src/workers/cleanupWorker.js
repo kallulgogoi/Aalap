@@ -7,43 +7,50 @@ const { deleteImage } = require("../services/cloudinary");
  * Runs automatically every night at 3:00 AM server time.
  */
 const startGarbageCollection = () => {
-  cron.schedule("0 3 * * *", async () => {
-    console.log("Running Nightly Garbage Collection...");
+  cron.schedule(
+    "0 3 * * *",
+    async () => {
+      console.log("Running Nightly Garbage Collection...");
 
-    try {
-      const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      try {
+        const cutoffDate = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-      // Find all messages ready for hard deletion using the partial index i created
-      const expiredMessages = await Message.find({
-        isDeleted: true,
-        deletedAt: { $lte: cutoffDate },
-      });
+        // Find all messages ready for hard deletion using the partial index i created
+        const expiredMessages = await Message.find({
+          isDeleted: true,
+          deletedAt: { $lte: cutoffDate },
+        });
 
-      if (expiredMessages.length === 0) {
-        console.log("No expired messages to clean up.");
-        return;
-      }
-
-      let deletedCount = 0;
-
-      for (const msg of expiredMessages) {
-        // wipe from Cloudinary
-        if (msg.publicId) {
-          await deleteImage(msg.publicId);
+        if (expiredMessages.length === 0) {
+          console.log("No expired messages to clean up.");
+          return;
         }
 
-        // hard delete from MongoDB
-        await Message.findByIdAndDelete(msg._id);
-        deletedCount++;
-      }
+        let deletedCount = 0;
 
-      console.log(
-        `Garbage Collection complete. Permanently removed ${deletedCount} messages.`,
-      );
-    } catch (error) {
-      console.error("Garbage Collection Failed:", error.message);
-    }
-  });
+        for (const msg of expiredMessages) {
+          // wipe from Cloudinary
+          if (msg.publicId) {
+            await deleteImage(msg.publicId);
+          }
+
+          // hard delete from MongoDB
+          await Message.findByIdAndDelete(msg._id);
+          deletedCount++;
+        }
+
+        console.log(
+          `Garbage Collection complete. Permanently removed ${deletedCount} messages.`,
+        );
+      } catch (error) {
+        console.error("Garbage Collection Failed:", error.message);
+      }
+    },
+    {
+      scheduled: true,
+      timezone: "Asia/Kolkata",
+    },
+  );
 };
 
 module.exports = { startGarbageCollection };
