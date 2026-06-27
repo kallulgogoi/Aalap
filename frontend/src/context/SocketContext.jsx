@@ -6,8 +6,6 @@ import { useSocket } from "../hooks/useSocket";
 const SocketContext = createContext(null);
 
 export const SocketProvider = ({ children }) => {
-  // This hook (which we built earlier) automatically connects
-  // when it detects a valid JWT token in Zustand.
   const socket = useSocket();
 
   return (
@@ -15,7 +13,6 @@ export const SocketProvider = ({ children }) => {
   );
 };
 
-// Custom hook to easily grab the socket anywhere in your UI
 export const useGlobalSocket = () => {
   return useContext(SocketContext);
 };

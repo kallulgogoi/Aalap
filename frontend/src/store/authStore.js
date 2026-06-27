@@ -18,7 +18,7 @@ export const useAuthStore = create(
         set({ user: null, token: null, isAuthenticated: false });
       },
 
-      // Call this if the user updates their profile picture/bio
+      // Call this if the user updates their profile
       updateUser: (updatedData) => {
         set((state) => ({
           user: { ...state.user, ...updatedData },

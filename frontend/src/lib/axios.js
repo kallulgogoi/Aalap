@@ -28,22 +28,14 @@ axiosInstance.interceptors.request.use(
   },
 );
 
-// --- RESPONSE INTERCEPTOR ---
-// Runs AFTER the backend replies, but BEFORE your React components see the data
 axiosInstance.interceptors.response.use(
   (response) => {
-    // If the request was successful, just pass the data through
     return response;
   },
   (error) => {
-    // If the backend says "401 Unauthorized" (e.g., token is fake or expired)
     if (error.response && error.response.status === 401) {
       console.warn("Session expired or invalid token. Logging out...");
-
-      // Instantly wipe the Zustand store and localStorage
       useAuthStore.getState().logout();
-
-      // Force a redirect to the login page (only if running in the browser)
       if (typeof window !== "undefined") {
         window.location.href = "/login";
       }

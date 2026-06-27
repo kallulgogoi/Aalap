@@ -10,33 +10,29 @@ export const AuthProvider = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 1. Wait for Zustand to load the token from localStorage
   useEffect(() => {
     setIsHydrated(true);
   }, []);
 
-  // 2. Global Route Guard
   useEffect(() => {
     if (!isHydrated) return;
 
-    // Define public routes that don't need a token
     const isPublicRoute =
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
       pathname.startsWith("/forgot-password") ||
       pathname.startsWith("/reset-password");
 
-    // If logged out and trying to see the chat -> kick to login
+    // If logged out and trying to see the chat
     if (!isAuthenticated && !isPublicRoute) {
       router.push("/login");
     }
-    // If logged in and trying to see the login page -> kick to chat
+    // If logged in and trying to see the login page
     else if (isAuthenticated && isPublicRoute) {
       router.push("/");
     }
   }, [isAuthenticated, pathname, isHydrated, router]);
 
-  // Prevent rendering the app until the auth state is fully known
   if (!isHydrated) {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-zinc-950">

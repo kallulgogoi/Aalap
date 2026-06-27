@@ -10,7 +10,9 @@ export const useSocket = () => {
   const addLiveMessage = useChatStore((state) => state.addLiveMessage);
   const updateUserPresence = useChatStore((state) => state.updateUserPresence);
   const markMessagesAsRead = useChatStore((state) => state.markMessagesAsRead);
-  const resolvePendingInvite = useChatStore((state) => state.resolvePendingInvite);
+  const resolvePendingInvite = useChatStore(
+    (state) => state.resolvePendingInvite,
+  );
   const updateParticipantProfile = useChatStore(
     (state) => state.updateParticipantProfile,
   );
@@ -20,25 +22,27 @@ export const useSocket = () => {
     // Prevent connection if the user is not logged in
     if (!token) return;
 
-    // Initialize Socket connection
     const socketInstance = io(
       process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
       {
-        auth: { token }, // Passes the JWT token to your backend Socket middleware
-        reconnection: true, // Automatically tries to reconnect if WiFi drops
+        auth: { token },
+        reconnection: true,
       },
     );
 
     socketInstance.on("connect", () => {
-      console.log("⚡ Real-time Socket connected:", socketInstance.id);
+      console.log("Real-time Socket connected:", socketInstance.id);
     });
 
     // Central listener for all incoming messages
     socketInstance.on("receive_message", (newMessage) => {
       // Play chime if sender is not the current user
       const currentUser = useAuthStore.getState().user;
-      const senderIdStr = typeof newMessage.senderId === "object" && newMessage.senderId !== null ? newMessage.senderId._id : newMessage.senderId;
-      
+      const senderIdStr =
+        typeof newMessage.senderId === "object" && newMessage.senderId !== null
+          ? newMessage.senderId._id
+          : newMessage.senderId;
+
       if (senderIdStr !== currentUser?.id && senderIdStr !== currentUser?._id) {
         playNotification();
       }
@@ -78,11 +82,19 @@ export const useSocket = () => {
 
     setSocket(socketInstance);
 
-    // Cleanup function: Disconnects the socket when the user logs out or closes the app
+    // Disconnects the socket when the user logs out or closes the app
     return () => {
       socketInstance.disconnect();
     };
-  }, [token, addLiveMessage, updateUserPresence, markMessagesAsRead, resolvePendingInvite, updateParticipantProfile, playNotification]);
+  }, [
+    token,
+    addLiveMessage,
+    updateUserPresence,
+    markMessagesAsRead,
+    resolvePendingInvite,
+    updateParticipantProfile,
+    playNotification,
+  ]);
 
   return socket;
 };

@@ -53,7 +53,7 @@ const cleanupLocalMessages = async (chatId) => {
       .equals(chatId)
       .toArray();
 
-    // 1. Delete messages older than 30 days
+    // Delete messages older than 30 days
     const expiredIds = localMessages
       .filter((m) => new Date(m.createdAt || Date.now()) < thirtyDaysAgo)
       .map((m) => m._id);
@@ -62,7 +62,7 @@ const cleanupLocalMessages = async (chatId) => {
       await db.messages.bulkDelete(expiredIds);
     }
 
-    // 2. Keep only 500 most recent
+    // Keep only 500 most recent
     const remainingMessages = localMessages.filter(
       (m) => !expiredIds.includes(m._id),
     );
@@ -154,7 +154,7 @@ export const useChatStore = create((set, get) => ({
 
     const db = getDb();
 
-    // 1. INSTANT LOAD: Try to get from local IndexedDB first
+    // Try to get from local IndexedDB first
     const localMessages = dedupeMessages(
       await db.messages.where("chatId").equals(chatId).toArray(),
     );
@@ -168,7 +168,7 @@ export const useChatStore = create((set, get) => ({
 
     void cleanupLocalMessages(chatId);
 
-    // 2. BACKGROUND SYNC: Fetch from server
+    // Fetch from server
     try {
       const response = await axiosInstance.get(`/messages/${chatId}?limit=100`);
       if (response.data?.success) {
@@ -230,7 +230,7 @@ export const useChatStore = create((set, get) => ({
 
     const db = getDb();
 
-    // 1. Persist to local DB (_id is the primary key in Dexie v2)
+    // Persist to local DB
     await db.messages.put(newMessage);
 
     const chatExists = get().chats.some((c) => c._id === newMessage.chatId);
@@ -251,7 +251,7 @@ export const useChatStore = create((set, get) => ({
       return;
     }
 
-    // 2. Atomically update messages + sidebar to avoid duplicate inserts from races
+    // Atomically update messages and sidebar
     set((state) => {
       const { activeChat, messages, chats } = state;
       const nextState = {};
@@ -335,13 +335,13 @@ export const useChatStore = create((set, get) => ({
     if (normalizedEmail) {
       const pendingId = `pending_${normalizedEmail}`;
 
-      // 1. Remove it from the live UI state
+      // Remove it from the live UI state
       set((state) => ({
         chats: state.chats.filter((chat) => chat._id !== pendingId),
         activeChat: wasViewingPending ? null : state.activeChat,
       }));
 
-      // 2. THE FIX: Explicitly delete the ghost chat from local IndexedDB
+      // Explicitly delete the ghost chat from local IndexedDB
       try {
         const db = getDb();
         await db.chats.delete(pendingId);
@@ -360,7 +360,7 @@ export const useChatStore = create((set, get) => ({
     }
   },
 
-  // For your Soft Delete / Restore feature
+  // For Soft Delete / Restore feature
   updateMessage: (messageId, updates) => {
     const { messages } = get();
     set({
@@ -470,7 +470,7 @@ export const useChatStore = create((set, get) => ({
     set((state) => {
       const db = getDb();
 
-      // 1. Update the sidebar preview (chats array)
+      // Update the sidebar preview 
       const updatedChats = state.chats.map((chat) => {
         if (chat._id === chatId && chat.latestMessage) {
           const msg = chat.latestMessage;
@@ -492,7 +492,7 @@ export const useChatStore = create((set, get) => ({
         return chat;
       });
 
-      // 2. Update the active chat window (messages array) if currently viewing it
+      // Update the active chat window (messages array) if currently viewing it
       let updatedMessages = state.messages;
       if (state.activeChat?._id === chatId) {
         updatedMessages = state.messages.map((msg) => {
@@ -517,7 +517,7 @@ export const useChatStore = create((set, get) => ({
         });
       }
 
-      // 3. Persist the updated sidebar to IndexedDB so it survives navigation
+      // Persist the updated sidebar to IndexedDB so it survives navigation
       void persistChatsToDb(updatedChats);
 
       return {

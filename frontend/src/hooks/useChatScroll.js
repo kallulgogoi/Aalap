@@ -10,7 +10,7 @@ export const useChatScroll = (messages, activeChatId, onLoadMore) => {
   });
   const [isNearTop, setIsNearTop] = useState(false);
 
-  // Handle maintaining scroll position when older messages are prepended
+  // maintaining scroll position when older messages are prepended
   useLayoutEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
@@ -22,19 +22,19 @@ export const useChatScroll = (messages, activeChatId, onLoadMore) => {
 
     const chatChanged = activeChatId !== previous.chatId;
     const isNewMessageAtBottom =
-      activeChatId === previous.chatId && 
-      count > previous.count && 
+      activeChatId === previous.chatId &&
+      count > previous.count &&
       lastId !== previous.lastId;
 
     if (chatChanged || isNewMessageAtBottom) {
       // Scroll to bottom on new chat or new message
       container.scrollTop = container.scrollHeight;
     } else if (
-      activeChatId === previous.chatId && 
-      count > previous.count && 
+      activeChatId === previous.chatId &&
+      count > previous.count &&
       lastId === previous.lastId
     ) {
-      // Older messages were prepended (infinite scroll)
+      // Older messages were prepended for infinite scroll
       // Adjust scroll position to maintain view
       const newScrollHeight = container.scrollHeight;
       const heightDifference = newScrollHeight - previous.scrollHeight;
@@ -49,13 +49,13 @@ export const useChatScroll = (messages, activeChatId, onLoadMore) => {
     };
   }, [messages, activeChatId]);
 
-  // Handle scroll events to detect top
+  // scroll events to detect top
   useEffect(() => {
     const container = scrollRef.current;
     if (!container) return;
 
     const handleScroll = () => {
-      // Detect if we are close to the top (e.g., within 50px)
+      // Detect if we are close to the top
       if (container.scrollTop < 50) {
         if (!isNearTop) {
           setIsNearTop(true);
