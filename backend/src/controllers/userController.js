@@ -4,7 +4,6 @@ const { uploadImage, deleteImage } = require("../services/cloudinary");
 const redisClient = require("../config/redis");
 const { getIO } = require("../sockets/index");
 
-// Search for a user by email to start a chat
 const searchUser = async (req, res, next) => {
   try {
     const { email } = req.query;
@@ -25,7 +24,6 @@ const searchUser = async (req, res, next) => {
       "-password",
     );
 
-    // Crucial for the Shadow Message UI logic on the frontend
     if (!user) {
       return res.status(200).json({ success: true, exists: false });
     }
@@ -46,7 +44,6 @@ const searchUsers = async (req, res) => {
     if (!email)
       return res.status(400).json({ message: "Please provide an email" });
 
-    // Find users matching the email (case-insensitive), but exclude the current logged-in user
     const users = await User.find({
       email: { $regex: email, $options: "i" },
       _id: { $ne: req.user._id },
@@ -60,7 +57,7 @@ const searchUsers = async (req, res) => {
         const userObj = u.toObject();
         userObj.isOnline = !!socketId;
         return userObj;
-      })
+      }),
     );
 
     res.status(200).json(usersWithPresence);
@@ -68,7 +65,7 @@ const searchUsers = async (req, res) => {
     res.status(500).json({ message: "Server error during search" });
   }
 };
-// Update Profile details & Avatar
+
 const updateProfile = async (req, res, next) => {
   try {
     const { username, bio } = req.body;
@@ -86,21 +83,16 @@ const updateProfile = async (req, res, next) => {
       return res.status(400).json({ message: "No profile changes provided." });
     }
 
-    // If the user uploaded a new profile picture via Multer
     if (req.file) {
-      // 1. Upload new image to Cloudinary
       const result = await uploadImage(req.file.path, "chat_app_profiles");
       updateFields.profilePic = { url: result.url, publicId: result.publicId };
 
-      // 2. Fetch the user's old image public_id
       const currentUser = await User.findById(req.user._id);
 
-      // 3. Delete the old image from Cloudinary to save space
       if (currentUser.profilePic && currentUser.profilePic.publicId) {
         await deleteImage(currentUser.profilePic.publicId);
       }
 
-      // 4. Cleanup local Multer file
       fs.unlinkSync(req.file.path);
     }
 
@@ -118,7 +110,10 @@ const updateProfile = async (req, res, next) => {
         profilePic: updatedUser.profilePic,
       });
     } catch (socketErr) {
-      console.warn("Profile update socket broadcast skipped:", socketErr.message);
+      console.warn(
+        "Profile update socket broadcast skipped:",
+        socketErr.message,
+      );
     }
 
     res.status(200).json({ success: true, user: updatedUser });

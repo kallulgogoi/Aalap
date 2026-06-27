@@ -3,18 +3,16 @@ const Chat = require("../models/Chat");
 const redisClient = require("../config/redis");
 const { generateDefaultAvatar } = require("../utils/avatar");
 
-// Fetch all chats for the logged-in user to render the sidebar
 const fetchChats = async (req, res, next) => {
   try {
     const chats = await Chat.find({ participants: { $in: [req.user._id] } })
-      .populate("participants", "-password") // Get user details, exclude passwords
+      .populate("participants", "-password")
       .populate({
         path: "lastMessage",
-        match: { isDeleted: false }, // Don't show deleted messages as the preview
+        match: { isDeleted: false },
       })
-      .sort({ updatedAt: -1 }); // Newest chats at the top
+      .sort({ updatedAt: -1 });
 
-    // For each chat, fetch unread messages count and participant online status
     const chatsWithMetadata = await Promise.all(
       chats.map(async (chat) => {
         const otherParticipant = chat.participants.find(
@@ -42,7 +40,6 @@ const fetchChats = async (req, res, next) => {
       }),
     );
 
-    // Pending shadow invites the current user has sent to unregistered emails
     const pendingShadowMessages = await Message.find({
       senderId: req.user._id,
       status: "pending_registration",
@@ -86,7 +83,6 @@ const fetchChats = async (req, res, next) => {
   }
 };
 
-// Start a new 1-on-1 chat or return the existing one
 const accessChat = async (req, res, next) => {
   try {
     const { targetUserId } = req.body;

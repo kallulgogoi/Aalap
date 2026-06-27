@@ -6,10 +6,8 @@ const { getChannel } = require("../config/rabbitmq");
 const { getIO } = require("../sockets/index");
 const redisClient = require("../config/redis");
 
-// Fetch message history for the active chat window
 const fetchMessages = async (req, res, next) => {
   try {
-    // 1. Automatically mark all messages sent to this user in this chat as read
     const updateResult = await Message.updateMany(
       {
         chatId: req.params.chatId,
@@ -19,11 +17,9 @@ const fetchMessages = async (req, res, next) => {
       { $set: { status: "read" } },
     );
 
-    // 2. THE FIX: If messages were updated during fetch, notify the sender via Socket.io
     if (updateResult.modifiedCount > 0) {
       const chat = await Chat.findById(req.params.chatId);
       if (chat) {
-        // Find the original sender's ID
         const senderId = chat.participants.find(
           (p) => p.toString() !== req.user._id.toString(),
         );
@@ -40,24 +36,20 @@ const fetchMessages = async (req, res, next) => {
       }
     }
 
-    // 3. Pagination setup
     const { limit = 100, before } = req.query;
     const query = { chatId: req.params.chatId };
-    
+
     if (before) {
       query.createdAt = { $lt: new Date(before) };
     }
 
-    // 4. Fetch messages (fetch newest first, up to limit)
     const messages = await Message.find(query)
       .populate("senderId", "username profilePic.url")
       .sort({ createdAt: -1 })
       .limit(parseInt(limit));
 
-    // Reverse to return them in chronological order
     messages.reverse();
 
-    // Check if there are more older messages
     let hasMore = false;
     if (messages.length > 0) {
       const oldestMessageDate = messages[0].createdAt;
@@ -74,7 +66,6 @@ const fetchMessages = async (req, res, next) => {
   }
 };
 
-// Phase 1 of Shadow Architecture: Send an invite message
 const sendShadowMessage = async (req, res, next) => {
   try {
     const { targetEmail, text } = req.body;
@@ -95,9 +86,8 @@ const sendShadowMessage = async (req, res, next) => {
       });
     }
 
-    // Save the pending message
     const shadowMsg = await Message.create({
-      chatId: null, // No chat container exists yet
+      chatId: null,
       senderId: req.user._id,
       receiverId: null,
       targetEmail: normalizedEmail,
@@ -105,7 +95,6 @@ const sendShadowMessage = async (req, res, next) => {
       status: "pending_registration",
     });
 
-    // Push task to RabbitMQ to email the unregistered user
     try {
       const channel = getChannel();
       channel.sendToQueue(
@@ -130,14 +119,13 @@ const sendShadowMessage = async (req, res, next) => {
   }
 };
 
-// The Cloudinary File Upload Endpoint
 const uploadMessageMedia = async (req, res, next) => {
   try {
     if (!req.file)
       return res.status(400).json({ message: "No file provided." });
 
     const result = await uploadImage(req.file.path, "chat_app_media");
-    fs.unlinkSync(req.file.path); // Clean up local server
+    fs.unlinkSync(req.file.path);
 
     res.status(200).json({
       success: true,
@@ -150,7 +138,6 @@ const uploadMessageMedia = async (req, res, next) => {
   }
 };
 
-// Soft Delete
 const softDeleteMessage = async (req, res, next) => {
   try {
     const msg = await Message.findOneAndUpdate(
@@ -176,7 +163,6 @@ const softDeleteMessage = async (req, res, next) => {
   }
 };
 
-// Undo Delete
 const restoreMessage = async (req, res, next) => {
   try {
     const msg = await Message.findOneAndUpdate(
@@ -199,7 +185,6 @@ const restoreMessage = async (req, res, next) => {
   }
 };
 
-// Send a message via REST (used by ChatArea for both ghost and existing chats)
 const sendMessage = async (req, res, next) => {
   try {
     const { chatId, receiverId, content } = req.body;
@@ -212,9 +197,7 @@ const sendMessage = async (req, res, next) => {
       });
     }
 
-    // Ghost chat flow: no chatId means this is a new conversation
     if (!targetChatId && receiverId) {
-      // Find existing chat between these two users, or create one
       let chat = await Chat.findOne({
         participants: { $all: [senderId, receiverId] },
       });
@@ -234,7 +217,6 @@ const sendMessage = async (req, res, next) => {
         .json({ message: "chatId or receiverId is required." });
     }
 
-    // Verify the sender is a participant in this chat
     const chat = await Chat.findOne({
       _id: targetChatId,
       participants: senderId,
@@ -245,7 +227,6 @@ const sendMessage = async (req, res, next) => {
         .json({ message: "Unauthorized to post in this chat." });
     }
 
-    // Determine the receiverId from chat participants if not provided
     const resolvedReceiverId =
       receiverId ||
       chat.participants.find((p) => p.toString() !== senderId.toString());
@@ -259,28 +240,24 @@ const sendMessage = async (req, res, next) => {
       });
     }
 
-    // Create the message
     const newMessage = await Message.create({
       chatId: targetChatId,
       senderId,
       receiverId: resolvedReceiverId,
       text: content || "",
-      mediaUrl: req.body.mediaUrl || null, // <-- ADD THIS
-      messageType: req.body.mediaUrl ? "image" : "text", // <-- DYNAMIC TYPE
+      mediaUrl: req.body.mediaUrl || null,
+      messageType: req.body.mediaUrl ? "image" : "text",
       status: "delivered",
     });
 
-    // Update lastMessage on the chat for sidebar preview
     chat.lastMessage = newMessage._id;
     await chat.save();
 
-    // Populate sender info so the receiver's UI can display correct avatar/name
     const populatedMessage = await Message.findById(newMessage._id).populate(
       "senderId",
       "username profilePic email",
     );
 
-    // Push to receiver via WebSocket if they're online
     try {
       if (resolvedReceiverId) {
         const receiverSocketId = await redisClient.get(
