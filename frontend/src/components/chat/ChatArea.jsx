@@ -59,12 +59,12 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
     }
   };
   
+  const [optimisticMsgs, setOptimisticMsgs] = useState([]);
   const visibleMessages = dedupeMessages([...messages, ...optimisticMsgs]);
   const scrollRef = useChatScroll(visibleMessages, activeChat?._id, handleLoadMore);
   const socket = useGlobalSocket();
   const [showInfo, setShowInfo] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
-  const [optimisticMsgs, setOptimisticMsgs] = useState([]);
 
   const groupMessagesByDate = (msgs) => {
     const groups = [];
