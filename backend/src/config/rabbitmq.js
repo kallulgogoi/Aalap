@@ -25,12 +25,11 @@ const connectRabbitMQ = async () => {
     return channel;
   } catch (error) {
     console.error("RabbitMQ Initialization Failed:", error.message);
-    // If it fails on boot, keep trying in the background so the rest of the app can start
+
     setTimeout(connectRabbitMQ, 5000);
   }
 };
 
-// Helper function so your controllers can grab the active channel without recreating it
 const getChannel = () => {
   if (!channel) {
     throw new Error("RabbitMQ channel is not initialized yet.");

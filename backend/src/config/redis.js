@@ -8,7 +8,6 @@ const redisClient = new Redis(process.env.REDIS_URI, {
     return delay;
   },
 
-  // Force a reconnect if Redis goes into read-only mode during a failover
   reconnectOnError(err) {
     const targetError = "READONLY";
     if (err.message.includes(targetError)) {
