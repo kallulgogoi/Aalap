@@ -120,7 +120,7 @@ export default function MessageInput({ onSendMessage, onTyping, disabled }) {
   };
 
   return (
-    <div className="p-4 glass-panel-strong border-t border-white/5 shrink-0 flex flex-col gap-2">
+    <div className="p-4 glass-panel-strong border-t border-white/5 shrink-0 flex flex-col gap-2 max-md:pb-6">
       {previewUrl && (
         <div className="relative w-16 h-16 ml-12 mb-1 group">
           <img

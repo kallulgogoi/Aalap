@@ -221,7 +221,7 @@ export default function ChatSidebar({ onChatSelect, isLoading = false }) {
         )}
       </div>
 
-      <div className="absolute bottom-5 right-5">
+      <div className="absolute right-5 bottom-5 max-md:bottom-[90px]">
         <NewChatDialog>
           <Button
             className="w-14 h-14 rounded-full btn-telegram hover:scale-105 transition-transform shadow-[0_16px_40px_rgba(36,161,222,0.35)]"

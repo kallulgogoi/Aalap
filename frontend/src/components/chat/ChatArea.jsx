@@ -63,6 +63,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
   const socket = useGlobalSocket();
   const [showInfo, setShowInfo] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
+  const [optimisticMsgs, setOptimisticMsgs] = useState([]);
 
   const groupMessagesByDate = (msgs) => {
     const groups = [];
@@ -201,6 +202,23 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
 
     try {
       const isGhost = activeChat.isGhost;
+      
+      const tempId = `temp-${Date.now()}`;
+      const optimisticMsg = {
+        _id: tempId,
+        text: input,
+        content: input,
+        mediaUrl,
+        senderId: myId,
+        chatId: activeChat._id,
+        createdAt: new Date().toISOString(),
+        status: "sending",
+      };
+
+      if (!isGhost) {
+        setOptimisticMsgs((prev) => [...prev, optimisticMsg]);
+      }
+
       const payload = isGhost
         ? { receiverId: activeChat.receiverId, content: input, mediaUrl }
         : { chatId: activeChat._id, content: input, mediaUrl };
@@ -233,10 +251,15 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
           await useChatStore.getState().setActiveChat(fallbackChat);
         }
       } else {
-       
+        if (!isGhost) {
+          setOptimisticMsgs((prev) => prev.filter((m) => m._id !== tempId));
+        }
         addLiveMessage(newMsg);
       }
     } catch (error) {
+      if (!activeChat.isGhost) {
+        setOptimisticMsgs((prev) => prev.filter((m) => m._id !== tempId));
+      }
       console.error("Failed to send message", error);
       toast.error(error.response?.data?.message || "Failed to send message.");
     }
@@ -280,7 +303,7 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
     );
   }
 
-  const visibleMessages = dedupeMessages(messages);
+  const visibleMessages = dedupeMessages([...messages, ...optimisticMsgs]);
 
   return (
     <div className="flex flex-col h-full flex-1 relative w-full">

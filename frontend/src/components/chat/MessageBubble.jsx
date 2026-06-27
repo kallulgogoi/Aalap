@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { getAvatarUrl } from "@/lib/avatar";
 import {
@@ -27,6 +27,23 @@ export default function MessageBubble({
   activeChat,
 }) {
   const [showUndo, setShowUndo] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const pressTimer = useRef(null);
+
+  const handlePressStart = () => {
+    pressTimer.current = setTimeout(() => {
+      setDropdownOpen(true);
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(50);
+      }
+    }, 500);
+  };
+
+  const handlePressEnd = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+    }
+  };
 
   useEffect(() => {
     if (message.isDeleted) {
@@ -137,8 +154,18 @@ export default function MessageBubble({
         )}
 
         <div
+          onTouchStart={handlePressStart}
+          onTouchEnd={handlePressEnd}
+          onTouchMove={handlePressEnd}
+          onMouseDown={handlePressStart}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressEnd}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setDropdownOpen(true);
+          }}
           className={cn(
-            "px-4 py-3 rounded-[20px] text-sm relative transition-all duration-200",
+            "px-4 py-3 rounded-[20px] text-sm relative transition-all duration-200 select-none",
             isMe ? "bubble-me rounded-br-md" : "bubble-them rounded-bl-md",
           )}
         >
@@ -183,7 +210,7 @@ export default function MessageBubble({
             isMe ? "-left-12" : "-right-12",
           )}
         >
-          <DropdownMenu>
+          <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <button
                 type="button"
