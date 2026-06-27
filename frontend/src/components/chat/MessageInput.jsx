@@ -13,6 +13,7 @@ export default function MessageInput({ onSendMessage, onTyping, disabled }) {
   const [selectedImage, setSelectedImage] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const fileInputRef = useRef(null);
   const inputRef = useRef(null);
@@ -73,7 +74,9 @@ export default function MessageInput({ onSendMessage, onTyping, disabled }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if ((!text.trim() && !selectedImage) || disabled || isUploading) return;
+    if ((!text.trim() && !selectedImage) || disabled || isUploading || isSending) return;
+
+    setIsSending(true);
 
     if (onTyping && typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -115,6 +118,7 @@ export default function MessageInput({ onSendMessage, onTyping, disabled }) {
       setText("");
       clearImage();
       setIsUploading(false);
+      setIsSending(false);
       setShowEmojiPicker(false);
     }
   };
@@ -198,10 +202,10 @@ export default function MessageInput({ onSendMessage, onTyping, disabled }) {
         <Button
           type="submit"
           size="icon"
-          disabled={(!text.trim() && !selectedImage) || disabled || isUploading}
+          disabled={(!text.trim() && !selectedImage) || disabled || isUploading || isSending}
           className="btn-telegram shrink-0 rounded-full w-11 h-11 shadow-lg shadow-[rgba(36,161,222,0.25)] transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:hover:scale-100"
         >
-          {isUploading ? (
+          {isUploading || isSending ? (
             <Loader2 className="w-8 h-8 animate-spin" />
           ) : (
             <Send className="w-8 h-8 ml-0.5" />

@@ -22,12 +22,12 @@ export const useSocket = () => {
     // Prevent connection if the user is not logged in
     if (!token) return;
 
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" && window.location.hostname === "localhost" ? "http://localhost:5000" : "");
     const socketInstance = io(
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
+      apiUrl,
       {
         auth: { token },
         reconnection: true,
-        transports: ["websocket"],
       },
     );
 
