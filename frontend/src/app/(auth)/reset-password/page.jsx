@@ -71,7 +71,7 @@ export default function ResetPasswordPage() {
         email: formData.email,
       });
       toast.success("A new 10-minute verification code has been sent.");
-      setResendTimer(60); // 60-second anti-spam cooldown
+      setResendTimer(60); // 60-second timer for resnding
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to resend code");
     } finally {
@@ -83,7 +83,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex bg-zinc-950">
       <LeftSidebar />
 
-      {/* Reset Password Form */}
+      {/* Reset Form */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4 lg:p-8">
         <Card className="w-full max-w-md bg-zinc-900/50 border-zinc-800 text-zinc-100 shadow-2xl backdrop-blur-sm">
           <CardHeader className="space-y-2 text-center pb-6">
@@ -132,7 +132,7 @@ export default function ResetPasswordPage() {
                   required
                 />
                 <div className="text-xs text-zinc-500 mt-1 flex justify-between items-center">
-                  <span>Didn't receive the code?</span>
+                  <span>Didn&apos;t receive the code?</span>
 
                   <button
                     type="button"

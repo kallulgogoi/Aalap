@@ -58,7 +58,7 @@ const LowLatencySVG = () => (
       />
     </circle>
 
-    {/* Small dots indicating speed */}
+    {/* Small dots */}
     <circle cx="140" cy="60" r="3" fill="#818cf8" opacity="0.6">
       <animate
         attributeName="opacity"

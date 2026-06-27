@@ -8,14 +8,14 @@ import LowLatencySVG from "@/components/ui/LowLatencySVG";
 export default function LeftSidebar() {
   return (
     <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-indigo-950/30 via-zinc-950 to-zinc-950 p-12 flex-col justify-center items-center border-r border-zinc-800">
-      {/* Background decorative elements */}
+      {/* Background elements */}
       <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
       <div className="absolute top-20 left-20 w-72 h-72 bg-indigo-600/10 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-20 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-lg w-full space-y-8">
-        {/* Logo/Brand */}
+        {/* Logo*/}
         <div className="flex items-center gap-3 mb-4">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <Image src="/images/logo.png" alt="Logo" width={48} height={48} />
@@ -40,7 +40,7 @@ export default function LeftSidebar() {
           </p>
         </div>
 
-        {/* Features List - Simplified */}
+        {/* Features List */}
         <div className="space-y-4 mt-6">
           <div className="flex items-center gap-4 p-3 rounded-xl bg-zinc-800/30 border border-zinc-700/30">
             <div className="w-12 h-12 flex-shrink-0">

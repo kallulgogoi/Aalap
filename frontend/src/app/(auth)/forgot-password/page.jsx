@@ -29,7 +29,7 @@ export default function ForgotPasswordPage() {
     try {
       await axiosInstance.post("/auth/forgot-password", { email });
       toast.success("Password reset instructions sent to your email.");
-      // Pass the email in the URL so the reset page knows who is resetting
+
       router.push(`/reset-password?email=${encodeURIComponent(email)}`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to process request");
@@ -67,8 +67,8 @@ export default function ForgotPasswordPage() {
               Reset Password
             </CardTitle>
             <CardDescription className="text-zinc-400">
-              Enter your email address and we'll send you a 6-digit verification
-              code.
+              Enter your email address and we&apos;ll send you a 6-digit
+              verification code.
             </CardDescription>
           </CardHeader>
           <CardContent>
