@@ -29,12 +29,12 @@ export const generateDefaultAvatar = (name = "User", seed = name) => {
 
 export const getAvatarUrl = (userOrName, fallbackSeed) => {
   if (userOrName && typeof userOrName === "object") {
-    // 1. If it's a Chat object, check if it has a custom pre-computed avatar
+    // If it's a Chat object, check if it has a custom pre-computed avatar
     if (userOrName.avatar && !userOrName.avatar.includes("ui-avatars.com")) {
       return userOrName.avatar;
     }
 
-    // 2. If it's a User object, look for the Cloudinary profilePic URL (not ui-avatars)
+    // If it's a User object, look for the Cloudinary profilePic URL
     const hasUploadedPic =
       userOrName.profilePic?.url &&
       !userOrName.profilePic.url.includes("ui-avatars.com");
@@ -43,21 +43,18 @@ export const getAvatarUrl = (userOrName, fallbackSeed) => {
       return userOrName.profilePic.url;
     }
 
-    // 3. IMPROVED FALLBACK CHAIN:
-    // Check username -> chatName -> email prefix -> fallbackSeed -> "User"
+    // username -> chatName -> email prefix -> fallbackSeed -> "User"
     const name =
       userOrName.username ||
       userOrName.chatName ||
       (userOrName.email ? userOrName.email.split("@")[0] : null) ||
       fallbackSeed ||
-      "User"; // Only fall back to "User" as the absolute last resort
+      "User";
 
     const seed = userOrName.email || userOrName._id || fallbackSeed || name;
 
     return generateDefaultAvatar(name, seed);
   }
-
-  // Handle if userOrName was passed as a raw string
   const name =
     typeof userOrName === "string" && userOrName.trim()
       ? userOrName.trim()

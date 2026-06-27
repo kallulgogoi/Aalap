@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import axiosInstance from "@/lib/axios";
 import { useAuthStore } from "./authStore";
-import { db } from "@/lib/db";
+import { getUserDb } from "@/lib/db";
 import { dedupeMessages, normalizeMessageId } from "@/lib/messageUtils";
 import {
   enrichChats,
@@ -10,13 +10,23 @@ import {
 } from "@/lib/chatUtils";
 import { generateDefaultAvatar, getAvatarUrl } from "@/lib/avatar";
 
+// Helper: resolve the current user's scoped IndexedDB instance
+const getDb = () => {
+  const user = useAuthStore.getState().user;
+  const userId = user?.id || user?._id;
+  return getUserDb(userId);
+};
+
 const persistChatsToDb = async (chats) => {
   try {
+    const db = getDb();
     const persistable = prepareChatsForStorage(chats);
     // Sort by updatedAt descending
-    persistable.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
-    
-    // LRU Eviction: Keep only top 100
+    persistable.sort(
+      (a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0),
+    );
+
+    // Keep only top 100
     const topChats = persistable.slice(0, 100);
     const chatsToDelete = persistable.slice(100);
 
@@ -24,7 +34,7 @@ const persistChatsToDb = async (chats) => {
       await db.chats.bulkPut(topChats);
     }
     if (chatsToDelete.length > 0) {
-      const idsToDelete = chatsToDelete.map(c => c._id);
+      const idsToDelete = chatsToDelete.map((c) => c._id);
       await db.chats.bulkDelete(idsToDelete);
     }
   } catch (error) {
@@ -34,26 +44,34 @@ const persistChatsToDb = async (chats) => {
 
 const cleanupLocalMessages = async (chatId) => {
   try {
+    const db = getDb();
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const localMessages = await db.messages.where("chatId").equals(chatId).toArray();
-    
+    const localMessages = await db.messages
+      .where("chatId")
+      .equals(chatId)
+      .toArray();
+
     // 1. Delete messages older than 30 days
     const expiredIds = localMessages
-      .filter(m => new Date(m.createdAt || Date.now()) < thirtyDaysAgo)
-      .map(m => m._id);
-      
+      .filter((m) => new Date(m.createdAt || Date.now()) < thirtyDaysAgo)
+      .map((m) => m._id);
+
     if (expiredIds.length > 0) {
       await db.messages.bulkDelete(expiredIds);
     }
 
     // 2. Keep only 500 most recent
-    const remainingMessages = localMessages.filter(m => !expiredIds.includes(m._id));
+    const remainingMessages = localMessages.filter(
+      (m) => !expiredIds.includes(m._id),
+    );
     if (remainingMessages.length > 500) {
-      remainingMessages.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      remainingMessages.sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0),
+      );
       const excessMessages = remainingMessages.slice(500);
-      const excessIds = excessMessages.map(m => m._id);
+      const excessIds = excessMessages.map((m) => m._id);
       await db.messages.bulkDelete(excessIds);
     }
   } catch (error) {
@@ -106,6 +124,7 @@ export const useChatStore = create((set, get) => ({
 
   fetchChats: async () => {
     try {
+      const db = getDb();
       const currentUser = useAuthStore.getState().user;
       const localChats = sortChats(
         enrichChats(
@@ -133,12 +152,16 @@ export const useChatStore = create((set, get) => ({
 
     set({ isMessagesLoading: true, hasMoreMessages: false });
 
+    const db = getDb();
+
     // 1. INSTANT LOAD: Try to get from local IndexedDB first
     const localMessages = dedupeMessages(
       await db.messages.where("chatId").equals(chatId).toArray(),
     );
-    localMessages.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
-    
+    localMessages.sort(
+      (a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0),
+    );
+
     if (localMessages.length > 0) {
       set({ messages: localMessages, isMessagesLoading: false });
     }
@@ -150,9 +173,9 @@ export const useChatStore = create((set, get) => ({
       const response = await axiosInstance.get(`/messages/${chatId}?limit=100`);
       if (response.data?.success) {
         const serverMessages = dedupeMessages(response.data.messages);
-        set({ 
+        set({
           messages: serverMessages,
-          hasMoreMessages: response.data.hasMore
+          hasMoreMessages: response.data.hasMore,
         });
 
         // Persist to IndexedDB
@@ -167,19 +190,28 @@ export const useChatStore = create((set, get) => ({
 
   fetchMoreMessages: async () => {
     const { activeChat, messages, isFetchingMore, hasMoreMessages } = get();
-    if (!activeChat || isFetchingMore || !hasMoreMessages || messages.length === 0) return;
+    if (
+      !activeChat ||
+      isFetchingMore ||
+      !hasMoreMessages ||
+      messages.length === 0
+    )
+      return;
 
     set({ isFetchingMore: true });
     try {
+      const db = getDb();
       const oldestMessageDate = messages[0].createdAt;
-      const response = await axiosInstance.get(`/messages/${activeChat._id}?limit=100&before=${encodeURIComponent(oldestMessageDate)}`);
-      
+      const response = await axiosInstance.get(
+        `/messages/${activeChat._id}?limit=100&before=${encodeURIComponent(oldestMessageDate)}`,
+      );
+
       if (response.data?.success) {
         const olderMessages = dedupeMessages(response.data.messages);
-        
+
         set((state) => ({
           messages: dedupeMessages([...olderMessages, ...state.messages]),
-          hasMoreMessages: response.data.hasMore
+          hasMoreMessages: response.data.hasMore,
         }));
 
         await db.messages.bulkPut(olderMessages);
@@ -195,6 +227,8 @@ export const useChatStore = create((set, get) => ({
   addLiveMessage: async (newMessage) => {
     const newMessageId = normalizeMessageId(newMessage?._id);
     if (!newMessageId) return;
+
+    const db = getDb();
 
     // 1. Persist to local DB (_id is the primary key in Dexie v2)
     await db.messages.put(newMessage);
@@ -309,6 +343,7 @@ export const useChatStore = create((set, get) => ({
 
       // 2. THE FIX: Explicitly delete the ghost chat from local IndexedDB
       try {
+        const db = getDb();
         await db.chats.delete(pendingId);
       } catch (err) {
         console.error("Failed to delete pending chat from local DB", err);
@@ -433,6 +468,8 @@ export const useChatStore = create((set, get) => ({
     const readerId = String(readBy);
 
     set((state) => {
+      const db = getDb();
+
       // 1. Update the sidebar preview (chats array)
       const updatedChats = state.chats.map((chat) => {
         if (chat._id === chatId && chat.latestMessage) {

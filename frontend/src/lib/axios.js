@@ -6,20 +6,15 @@ const getBaseURL = () => {
   return url.endsWith("/api") ? url : `${url}/api`;
 };
 
-// Create a custom Axios instance
 const axiosInstance = axios.create({
-  // Point this to your Express backend
   baseURL: getBaseURL(),
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// --- REQUEST INTERCEPTOR ---
-// Runs BEFORE every request is sent to the backend
 axiosInstance.interceptors.request.use(
   (config) => {
-    // We use .getState() to read from Zustand OUTSIDE of a React component
     const token = useAuthStore.getState().token;
 
     if (token) {

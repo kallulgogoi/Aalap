@@ -16,7 +16,7 @@ import {
 import TelegramModal from "@/components/ui/TelegramModal";
 import { TelegramSection, TelegramRow } from "@/components/ui/TelegramSettings";
 import { toast } from "sonner";
-import { db } from "@/lib/db";
+import { getUserDb } from "@/lib/db";
 
 
 export default function SettingsDialog({
@@ -35,6 +35,8 @@ export default function SettingsDialog({
 
   const handleClearDatabase = async () => {
     try {
+      const userId = user?.id || user?._id;
+      const db = getUserDb(userId);
       await db.messages.clear();
       await db.chats.clear();
       toast.success("Local database cache cleared!");
