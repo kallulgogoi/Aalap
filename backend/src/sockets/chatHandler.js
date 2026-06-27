@@ -2,13 +2,7 @@ const Message = require("../models/Message");
 const Chat = require("../models/Chat");
 const redisClient = require("../config/redis");
 
-/**
- * Registers all chat-related WebSocket events for a connected client
- * @param {Object} io - The main Socket.io server instance
- * @param {Object} socket - The individual client's socket connection
- */
 const registerChatHandlers = (io, socket) => {
-  // --- 1. SENDING A MESSAGE ---
   socket.on("send_message", async (payload, callback) => {
     try {
       const { chatId, receiverId, text, messageType, mediaUrl } = payload;
@@ -21,7 +15,6 @@ const registerChatHandlers = (io, socket) => {
         });
       }
 
-      // Security: Verify the user is actually a participant in this chat
       const chat = await Chat.findOne({ _id: chatId, participants: senderId });
       if (!chat) {
         return callback({
@@ -30,7 +23,6 @@ const registerChatHandlers = (io, socket) => {
         });
       }
 
-      // 1. Persist the message to MongoDB instantly
       const newMessage = await Message.create({
         chatId,
         senderId,
@@ -41,28 +33,23 @@ const registerChatHandlers = (io, socket) => {
         status: "delivered",
       });
 
-      // 2. Update the Chat container's lastMessage for fast sidebar rendering
       chat.lastMessage = newMessage._id;
       await chat.save();
 
-      // 3. Populate sender info for the receiver's UI
       const populatedMessage = await Message.findById(newMessage._id).populate(
         "senderId",
         "username profilePic email",
       );
 
-      // 4. Routing (Redis O(1) Lookup)
       const receiverSocketId = await redisClient.get(`user:${receiverId}`);
 
       if (receiverSocketId) {
-        // Receiver is online: Push the message to them instantly
         io.to(receiverSocketId).emit(
           "receive_message",
           populatedMessage || newMessage,
         );
       }
 
-      // 4. Acknowledge success back to the sender's frontend
       if (typeof callback === "function") {
         callback({ success: true, message: newMessage });
       }
@@ -74,12 +61,10 @@ const registerChatHandlers = (io, socket) => {
     }
   });
 
-  // --- 2. TYPING INDICATORS ---
   socket.on("typing", async ({ receiverId, chatId, isTyping }) => {
     try {
       const receiverSocketId = await redisClient.get(`user:${receiverId}`);
       if (receiverSocketId) {
-        // Only route the typing event, no database interaction needed
         io.to(receiverSocketId).emit("user_typing", {
           chatId,
           senderId: socket.userId,
@@ -91,21 +76,17 @@ const registerChatHandlers = (io, socket) => {
     }
   });
 
-  // --- 3. READ RECEIPTS (Offline to Online Resolution) ---
   socket.on("mark_messages_read", async ({ chatId, senderId }) => {
     try {
       const readerId = socket.userId;
 
-      // 1. Bulk update the database in a single transaction
       const result = await Message.updateMany(
         { chatId, senderId, receiverId: readerId, status: "delivered" },
         { $set: { status: "read" } },
       );
 
-      // If no documents were updated, halt to prevent unnecessary WebSocket emits
       if (result.modifiedCount === 0) return;
 
-      // 2. Alert the original sender so their UI updates to double blue checkmarks
       const senderSocketId = await redisClient.get(`user:${senderId}`);
       if (senderSocketId) {
         io.to(senderSocketId).emit("receipts_updated", {

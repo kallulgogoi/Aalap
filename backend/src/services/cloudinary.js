@@ -4,21 +4,18 @@ cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true, // https
+  secure: true,
 });
 
 /**
- * Uploads an image stream to Cloudinary
- * @param {String} filePath - The local path of the uploaded file (via multer)
- * @param {String} folder - The destination folder in Cloudinary
+ * @param {String} filePath - The local path of the uploaded file
+ * @param {String} folder - The destination folder in Cld
  * @returns {Object} - Contains the secure_url and public_id
  */
 const uploadImage = async (filePath, folder = "chat_app_profiles") => {
   try {
-    // Keep it simple to avoid signature mismatches
     const result = await cloudinary.uploader.upload(filePath, {
       folder: folder,
-      // Remove complex transformations for now to debug the signature
       resource_type: "image",
     });
 
@@ -33,8 +30,7 @@ const uploadImage = async (filePath, folder = "chat_app_profiles") => {
 };
 
 /**
- * Used for profile picture cleanup
- * @param {String} publicId - The cloudinary public ID of the image to delete
+ * @param {String} publicId - public ID of the image to delete
  */
 const deleteImage = async (publicId) => {
   if (!publicId) return;

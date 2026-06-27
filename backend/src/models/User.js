@@ -15,13 +15,13 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true, // Speeds up login and shadow message resolution queries
+      index: true,
     },
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
-      select: false, // Prevents password from being returned in standard queries
+      select: false,
     },
     bio: {
       type: String,
@@ -40,11 +40,11 @@ const userSchema = new mongoose.Schema(
     },
     isVerified: {
       type: Boolean,
-      default: false, // Toggled to true after RabbitMQ OTP verification
+      default: false,
     },
   },
   {
-    timestamps: true, // Automatically adds createdAt and updatedAt
+    timestamps: true,
   },
 );
 

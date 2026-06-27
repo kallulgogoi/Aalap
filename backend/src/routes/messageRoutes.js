@@ -2,8 +2,8 @@ const express = require("express");
 const router = express.Router();
 const multer = require("multer");
 const rateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis").default; // Import adapter
-const redisClient = require("../config/redis"); // Import your Redis client
+const RedisStore = require("rate-limit-redis").default;
+const redisClient = require("../config/redis");
 
 const { protect } = require("../middlewares/authMiddleware");
 const {
@@ -18,7 +18,7 @@ const {
 const upload = multer({ dest: "uploads/" });
 
 const apiLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute
+  windowMs: 1 * 60 * 1000, // 1 min
   max: 150,
   store: new RedisStore({
     sendCommand: (...args) => redisClient.call(...args),
@@ -34,9 +34,8 @@ const apiLimiter = rateLimit({
 router.use(protect);
 router.use(apiLimiter);
 
-// Message Routes
 router.get("/:chatId", fetchMessages);
-router.post("/", sendMessage); // Send a message (ghost chat or existing chat)
+router.post("/", sendMessage);
 router.post("/shadow", sendShadowMessage);
 router.post("/upload", upload.single("chatImage"), uploadMessageMedia);
 router.put("/:id/delete", softDeleteMessage);

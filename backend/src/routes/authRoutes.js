@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const rateLimit = require("express-rate-limit");
-const RedisStore = require("rate-limit-redis").default; // <-- Import the Redis Store adapter
-const redisClient = require("../config/redis"); // <-- Import your Upstash Redis client
+const RedisStore = require("rate-limit-redis").default;
+const redisClient = require("../config/redis");
 
 const {
   register,
@@ -12,12 +12,11 @@ const {
   resetPassword,
 } = require("../controllers/authController");
 
-// Strict Auth Limiter (10 requests per 15 mins backed by Redis)
+// 10 req per 15 mins
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
   store: new RedisStore({
-    // This tells the rate limiter exactly how to talk to Upstash
     sendCommand: (...args) => redisClient.call(...args),
   }),
   message: {
