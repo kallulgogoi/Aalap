@@ -1,6 +1,6 @@
 const Redis = require("ioredis");
 
-const redisClient = new Redis(process.env.REDIS_URI, {
+const redisOptions = {
   maxRetriesPerRequest: 3,
 
   retryStrategy(times) {
@@ -15,7 +15,9 @@ const redisClient = new Redis(process.env.REDIS_URI, {
     }
     return false;
   },
-});
+};
+
+const redisClient = new Redis(process.env.REDIS_URI, redisOptions);
 
 redisClient.on("connect", () => {
   console.log("Redis Client Connected");
@@ -25,4 +27,11 @@ redisClient.on("error", (err) => {
   console.error("Redis Client Error:", err.message);
 });
 
+// Factory to create fresh Redis clients for the Socket.io adapter (pub/sub)
+const createRedisClient = () => {
+  return new Redis(process.env.REDIS_URI, redisOptions);
+};
+
 module.exports = redisClient;
+module.exports.createRedisClient = createRedisClient;
+

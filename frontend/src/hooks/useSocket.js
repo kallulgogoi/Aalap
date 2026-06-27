@@ -22,17 +22,29 @@ export const useSocket = () => {
     // Prevent connection if the user is not logged in
     if (!token) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" && window.location.hostname === "localhost" ? "http://localhost:5000" : "");
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
     const socketInstance = io(
       apiUrl,
       {
         auth: { token },
         reconnection: true,
+        reconnectionAttempts: Infinity,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        timeout: 20000,
       },
     );
 
     socketInstance.on("connect", () => {
       console.log("Real-time Socket connected:", socketInstance.id);
+    });
+
+    socketInstance.on("connect_error", (err) => {
+      console.error("Socket connection error:", err.message);
+    });
+
+    socketInstance.on("disconnect", (reason) => {
+      console.warn("Socket disconnected:", reason);
     });
 
     // Central listener for all incoming messages

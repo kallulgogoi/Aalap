@@ -1,6 +1,8 @@
 const { Server } = require("socket.io");
 const jwt = require("jsonwebtoken");
 const redisClient = require("../config/redis");
+const { createRedisClient } = require("../config/redis");
+const { createAdapter } = require("@socket.io/redis-adapter");
 const { registerChatHandlers } = require("./chatHandler");
 
 let io = null;
@@ -14,6 +16,19 @@ const initSockets = (httpServer) => {
     },
     pingTimeout: 60000,
   });
+
+  // Create dedicated pub/sub Redis clients for the adapter
+  const pubClient = createRedisClient();
+  const subClient = createRedisClient();
+
+  Promise.all([
+    new Promise((resolve) => pubClient.on("connect", resolve)),
+    new Promise((resolve) => subClient.on("connect", resolve)),
+  ]).then(() => {
+    console.log("Socket.io Redis Adapter connected (pub/sub ready)");
+  });
+
+  io.adapter(createAdapter(pubClient, subClient));
 
   io.use((socket, next) => {
     try {
@@ -53,14 +68,18 @@ const initSockets = (httpServer) => {
       socket.on("disconnect", async () => {
         console.log(`Socket disconnected: ${socket.id}`);
 
-        // Remove from Redis memory
-        await redisClient.del(`user:${socket.userId}`);
+        // Only remove from Redis if this socket is still the registered one
+        // (prevents a race condition with reconnects)
+        const currentSocketId = await redisClient.get(`user:${socket.userId}`);
+        if (currentSocketId === socket.id) {
+          await redisClient.del(`user:${socket.userId}`);
 
-        // Broadcast offline status
-        socket.broadcast.emit("user_presence_change", {
-          userId: socket.userId,
-          status: "offline",
-        });
+          // Broadcast offline status
+          socket.broadcast.emit("user_presence_change", {
+            userId: socket.userId,
+            status: "offline",
+          });
+        }
       });
     } catch (error) {
       console.error("Connection Setup Error:", error.message);
@@ -80,3 +99,4 @@ const getIO = () => {
 };
 
 module.exports = { initSockets, getIO };
+
