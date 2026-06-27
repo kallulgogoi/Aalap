@@ -13,11 +13,51 @@ import { generateDefaultAvatar, getAvatarUrl } from "@/lib/avatar";
 const persistChatsToDb = async (chats) => {
   try {
     const persistable = prepareChatsForStorage(chats);
-    if (persistable.length > 0) {
-      await db.chats.bulkPut(persistable);
+    // Sort by updatedAt descending
+    persistable.sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
+    
+    // LRU Eviction: Keep only top 100
+    const topChats = persistable.slice(0, 100);
+    const chatsToDelete = persistable.slice(100);
+
+    if (topChats.length > 0) {
+      await db.chats.bulkPut(topChats);
+    }
+    if (chatsToDelete.length > 0) {
+      const idsToDelete = chatsToDelete.map(c => c._id);
+      await db.chats.bulkDelete(idsToDelete);
     }
   } catch (error) {
     console.error("Failed to persist chats to IndexedDB", error);
+  }
+};
+
+const cleanupLocalMessages = async (chatId) => {
+  try {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const localMessages = await db.messages.where("chatId").equals(chatId).toArray();
+    
+    // 1. Delete messages older than 30 days
+    const expiredIds = localMessages
+      .filter(m => new Date(m.createdAt || Date.now()) < thirtyDaysAgo)
+      .map(m => m._id);
+      
+    if (expiredIds.length > 0) {
+      await db.messages.bulkDelete(expiredIds);
+    }
+
+    // 2. Keep only 500 most recent
+    const remainingMessages = localMessages.filter(m => !expiredIds.includes(m._id));
+    if (remainingMessages.length > 500) {
+      remainingMessages.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      const excessMessages = remainingMessages.slice(500);
+      const excessIds = excessMessages.map(m => m._id);
+      await db.messages.bulkDelete(excessIds);
+    }
+  } catch (error) {
+    console.error("Failed to cleanup local messages", error);
   }
 };
 
@@ -26,6 +66,8 @@ export const useChatStore = create((set, get) => ({
   activeChat: null,
   messages: [],
   isMessagesLoading: false,
+  hasMoreMessages: false,
+  isFetchingMore: false,
 
   setChats: (chats) => {
     const sorted = sortChats(chats);
@@ -37,7 +79,7 @@ export const useChatStore = create((set, get) => ({
     set({ activeChat: chat });
 
     if (!chat) {
-      set({ messages: [] });
+      set({ messages: [], hasMoreMessages: false });
       return;
     }
 
@@ -45,12 +87,13 @@ export const useChatStore = create((set, get) => ({
       set({
         messages: chat.latestMessage ? [chat.latestMessage] : [],
         isMessagesLoading: false,
+        hasMoreMessages: false,
       });
       return;
     }
 
     if (chat.isGhost) {
-      set({ messages: [] });
+      set({ messages: [], hasMoreMessages: false });
       return;
     }
 
@@ -88,22 +131,29 @@ export const useChatStore = create((set, get) => ({
   fetchMessages: async (chatId) => {
     if (!chatId || String(chatId).startsWith("pending_")) return;
 
-    set({ isMessagesLoading: true });
+    set({ isMessagesLoading: true, hasMoreMessages: false });
 
     // 1. INSTANT LOAD: Try to get from local IndexedDB first
     const localMessages = dedupeMessages(
       await db.messages.where("chatId").equals(chatId).toArray(),
     );
+    localMessages.sort((a, b) => new Date(a.createdAt || 0) - new Date(b.createdAt || 0));
+    
     if (localMessages.length > 0) {
       set({ messages: localMessages, isMessagesLoading: false });
     }
 
+    void cleanupLocalMessages(chatId);
+
     // 2. BACKGROUND SYNC: Fetch from server
     try {
-      const response = await axiosInstance.get(`/messages/${chatId}`);
+      const response = await axiosInstance.get(`/messages/${chatId}?limit=100`);
       if (response.data?.success) {
         const serverMessages = dedupeMessages(response.data.messages);
-        set({ messages: serverMessages });
+        set({ 
+          messages: serverMessages,
+          hasMoreMessages: response.data.hasMore
+        });
 
         // Persist to IndexedDB
         await db.messages.bulkPut(serverMessages);
@@ -112,6 +162,33 @@ export const useChatStore = create((set, get) => ({
       console.error("Failed to sync messages", error);
     } finally {
       set({ isMessagesLoading: false });
+    }
+  },
+
+  fetchMoreMessages: async () => {
+    const { activeChat, messages, isFetchingMore, hasMoreMessages } = get();
+    if (!activeChat || isFetchingMore || !hasMoreMessages || messages.length === 0) return;
+
+    set({ isFetchingMore: true });
+    try {
+      const oldestMessageDate = messages[0].createdAt;
+      const response = await axiosInstance.get(`/messages/${activeChat._id}?limit=100&before=${encodeURIComponent(oldestMessageDate)}`);
+      
+      if (response.data?.success) {
+        const olderMessages = dedupeMessages(response.data.messages);
+        
+        set((state) => ({
+          messages: dedupeMessages([...olderMessages, ...state.messages]),
+          hasMoreMessages: response.data.hasMore
+        }));
+
+        await db.messages.bulkPut(olderMessages);
+        void cleanupLocalMessages(activeChat._id);
+      }
+    } catch (error) {
+      console.error("Failed to fetch more messages", error);
+    } finally {
+      set({ isFetchingMore: false });
     }
   },
 

@@ -40,12 +40,35 @@ const fetchMessages = async (req, res, next) => {
       }
     }
 
-    // 3. Fetch the newly updated messages to send to the receiver
-    const messages = await Message.find({ chatId: req.params.chatId })
-      .populate("senderId", "username profilePic.url")
-      .sort({ createdAt: 1 });
+    // 3. Pagination setup
+    const { limit = 100, before } = req.query;
+    const query = { chatId: req.params.chatId };
+    
+    if (before) {
+      query.createdAt = { $lt: new Date(before) };
+    }
 
-    res.status(200).json({ success: true, messages });
+    // 4. Fetch messages (fetch newest first, up to limit)
+    const messages = await Message.find(query)
+      .populate("senderId", "username profilePic.url")
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit));
+
+    // Reverse to return them in chronological order
+    messages.reverse();
+
+    // Check if there are more older messages
+    let hasMore = false;
+    if (messages.length > 0) {
+      const oldestMessageDate = messages[0].createdAt;
+      const count = await Message.countDocuments({
+        chatId: req.params.chatId,
+        createdAt: { $lt: oldestMessageDate },
+      });
+      hasMore = count > 0;
+    }
+
+    res.status(200).json({ success: true, messages, hasMore });
   } catch (error) {
     next(error);
   }

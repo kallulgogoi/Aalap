@@ -48,9 +48,18 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
     messages,
     addLiveMessage,
     isMessagesLoading,
+    fetchMoreMessages,
+    isFetchingMore,
   } = useChatStore();
   const { user } = useAuthStore();
-  const scrollRef = useChatScroll(messages, activeChat?._id);
+  
+  const handleLoadMore = () => {
+    if (!isFetchingMore && !isMessagesLoading) {
+      fetchMoreMessages();
+    }
+  };
+  
+  const scrollRef = useChatScroll(messages, activeChat?._id, handleLoadMore);
   const socket = useGlobalSocket();
   const [showInfo, setShowInfo] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
@@ -415,6 +424,11 @@ export default function ChatArea({ onOpenDetails, detailsOpen = true }) {
             </div>
           ) : (
             <div className="space-y-6 pb-2">
+              {isFetchingMore && (
+                <div className="flex justify-center py-2">
+                  <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />
+                </div>
+              )}
               {groupMessagesByDate(visibleMessages).map((group, gIndex) => (
                 <div key={`group-${gIndex}`} className="space-y-2">
                   <div className="flex justify-center sticky top-2 z-10 my-4">
