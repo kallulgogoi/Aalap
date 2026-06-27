@@ -128,141 +128,150 @@ export default function MainChatDashboard() {
   };
 
   return (
-    <div className="flex h-screen w-full app-bg overflow-hidden">
+    <div className="flex h-screen w-full bg-[#0E1621] overflow-hidden">
+      {/* Account Drawer Overlay */}
       {isAccountDrawerOpen && (
         <div
-          className="fixed inset-0 bg-black/55 z-[60] backdrop-blur-[2px]"
+          className="fixed inset-0 bg-black/40 z-[60] backdrop-blur-sm"
           onClick={() => setIsAccountDrawerOpen(false)}
         />
       )}
 
+      {/* Account Drawer */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-[70] w-[min(300px,88vw)] flex flex-col bg-[#17212b] border-r border-black/25 shadow-2xl transform transition-transform duration-300 ease-out",
+          "fixed inset-y-0 left-0 z-[70] w-[min(320px,85vw)] flex flex-col bg-[#17212B] shadow-2xl transform transition-transform duration-300 ease-out",
           isAccountDrawerOpen
             ? "translate-x-0"
             : "-translate-x-full pointer-events-none",
         )}
       >
-        <div className="h-14 border-b border-black/20 flex items-center justify-between px-4 shrink-0">
-          <span className="text-[15px] font-medium text-white">Account</span>
-          <Button
-            variant="ghost"
-            size="icon"
+        {/* Drawer Header */}
+        <div className="h-[56px] flex items-center justify-between px-4">
+          <span className="text-[17px] font-medium text-white">Account</span>
+          <button
             onClick={() => setIsAccountDrawerOpen(false)}
-            className="text-tg-muted hover:text-white hover:bg-white/5 rounded-full"
+            className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-[#8D9BAF] hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
-          </Button>
+          </button>
         </div>
 
-        <div className="flex flex-col flex-1 p-4">
-          <div className="flex flex-col items-center py-6 px-4 rounded-2xl bg-telegram-soft">
-            <img
-              src={getAvatarUrl(user)}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover profile-avatar-ring"
-            />
-            <p className="mt-4 font-semibold text-white">{user?.username}</p>
-            <p className="text-sm text-tg-muted mt-1">{user?.email}</p>
+        {/* Drawer Content */}
+        <div className="flex flex-col flex-1 px-4">
+          {/* Profile Card */}
+          <div className="flex flex-col items-center py-6 rounded-xl bg-[#242F3D]">
+            <div className="w-[84px] h-[84px] rounded-full overflow-hidden ring-2 ring-[#2B5278]">
+              <img
+                src={getAvatarUrl(user)}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <p className="mt-3 font-semibold text-[17px] text-white">
+              {user?.username}
+            </p>
+            <p className="text-[15px] text-[#8D9BAF] mt-0.5">{user?.email}</p>
           </div>
 
-          <button
-            type="button"
-            onClick={openProfile}
-            className="profile-menu-item mt-4 group"
-          >
-            <div className="w-11 h-11 rounded-full bg-telegram-soft flex items-center justify-center">
-              <UserCircle className="w-5 h-5 text-telegram" />
-            </div>
-            <span className="flex-1 text-sm font-medium text-white text-left">
-              My Profile
-            </span>
-            <ChevronRight className="w-4 h-4 text-tg-muted group-hover:text-telegram transition-colors" />
-          </button>
-
-          <button
-            type="button"
-            onClick={openSettings}
-            className="profile-menu-item mt-1 group"
-          >
-            <div className="w-11 h-11 rounded-full bg-telegram-soft flex items-center justify-center">
-              <Settings className="w-5 h-5 text-telegram" />
-            </div>
-            <span className="flex-1 text-sm font-medium text-white text-left">
-              Settings
-            </span>
-            <ChevronRight className="w-4 h-4 text-tg-muted group-hover:text-telegram transition-colors" />
-          </button>
-
-          <div className="mt-auto pt-4 border-t border-white/5">
+          {/* Menu Items */}
+          <div className="mt-3 flex flex-col gap-0.5">
             <button
-              type="button"
+              onClick={openProfile}
+              className="flex items-center gap-3 px-3 py-[13px] rounded-xl hover:bg-white/5 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#2B5278] flex items-center justify-center">
+                <UserCircle className="w-[18px] h-[18px] text-white" />
+              </div>
+              <span className="flex-1 text-left text-[17px] text-white">
+                My Profile
+              </span>
+              <ChevronRight className="w-4 h-4 text-[#8D9BAF] group-hover:text-white transition-colors" />
+            </button>
+
+            <button
+              onClick={openSettings}
+              className="flex items-center gap-3 px-3 py-[13px] rounded-xl hover:bg-white/5 transition-colors group"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#2B5278] flex items-center justify-center">
+                <Settings className="w-[18px] h-[18px] text-white" />
+              </div>
+              <span className="flex-1 text-left text-[17px] text-white">
+                Settings
+              </span>
+              <ChevronRight className="w-4 h-4 text-[#8D9BAF] group-hover:text-white transition-colors" />
+            </button>
+          </div>
+
+          {/* Logout */}
+          <div className="mt-auto pb-4">
+            <button
               onClick={handleLogout}
-              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-full hover:bg-red-500/10 transition-colors text-red-400 hover:text-red-300"
+              className="flex items-center justify-center gap-2 w-full px-4 py-[14px] rounded-xl bg-[#242F3D] hover:bg-[#FF3B30]/20 text-[#FF3B30] hover:text-[#FF453A] transition-colors"
             >
               <LogOut className="w-5 h-5" />
-              <span className="text-sm font-medium">Logout</span>
+              <span className="text-[17px] font-medium">Log Out</span>
             </button>
           </div>
         </div>
       </div>
 
+      {/* Sidebar */}
       <div
         ref={sidebarRef}
         style={{ width: sidebarWidth }}
         className={cn(
-          "flex flex-col shrink-0 transition-all duration-300 border-r border-white/5 bg-[rgba(8,12,24,0.55)] backdrop-blur-2xl relative",
+          "flex flex-col shrink-0 transition-all duration-200 bg-[#17212B] relative",
           !activeChat && "flex max-md:!w-full max-md:pb-[70px]",
           activeChat && !isMobileSidebarOpen && "hidden md:flex",
           activeChat &&
             isMobileSidebarOpen &&
-            "fixed inset-y-0 left-0 z-40 flex w-full max-w-[85%] max-md:!w-full",
+            "fixed inset-y-0 left-0 z-40 flex w-full max-w-[85%] max-md:!w-full shadow-xl",
           isResizing && "transition-none",
         )}
       >
+        {/* Resize Handle */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-[#24A1DE]/50 transition-colors z-20 hidden md:block"
+          className="absolute right-0 top-0 bottom-0 w-[2px] cursor-col-resize hover:bg-[#2B5278] transition-colors z-20 hidden md:block"
           onMouseDown={startResize}
         />
 
-        <div className="h-16 border-b border-zinc-800/50 flex items-center px-4 shrink-0 bg-zinc-950/60 backdrop-blur-xl">
+        {/* Sidebar Header */}
+        <div className="h-[56px] flex items-center px-4 bg-[#17212B]">
           <div className="flex items-center gap-2 min-w-0">
             {activeChat && isMobileSidebarOpen && (
-              <Button
-                variant="ghost"
-                size="icon"
+              <button
                 onClick={() => setIsMobileSidebarOpen(false)}
-                className="md:hidden text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 shrink-0"
+                className="md:hidden w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-[#8D9BAF] hover:text-white"
               >
                 <X className="w-5 h-5" />
-              </Button>
+              </button>
             )}
 
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={() => setIsAccountDrawerOpen(true)}
-              className="text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/50 rounded-xl shrink-0"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 text-[#8D9BAF] hover:text-white transition-colors"
               title="Open menu"
             >
               <Menu className="w-5 h-5" />
-            </Button>
+            </button>
 
-            <span className="text-lg font-display font-bold text-telegram truncate">
+            <span className="text-xl md:text-2xl font-semibold text-white truncate ml-1">
               Aalap
             </span>
           </div>
         </div>
 
+        {/* Chat List */}
         <div className="flex-1 overflow-hidden">
           <ChatSidebar onChatSelect={() => setIsMobileSidebarOpen(false)} />
         </div>
       </div>
 
+      {/* Main Chat Area */}
       <div
         className={cn(
-          "flex-1 bg-gradient-to-b from-zinc-950 to-zinc-900 flex flex-col relative md:pb-0",
+          "flex-1 bg-gradient-to-b from-[#0E1621] to-[#17212B] flex flex-col relative",
           activeChat ? "flex" : "hidden md:flex",
         )}
       >
@@ -274,35 +283,35 @@ export default function MainChatDashboard() {
             />
           </div>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center text-zinc-500 p-6">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full blur-2xl bg-telegram-soft animate-pulse" />
-              <div className="w-42 h-42 rounded-full flex items-center justify-center relative">
-                <Image
-                  src="/images/empty1.png"
-                  alt="Welcome"
-                  loading="eager"
-                  width={90}
-                  height={90}
-                  className="w-full h-full object-fit rounded-full"
-                />
-              </div>
+          /* Empty State */
+          <div className="flex-1 flex flex-col items-center justify-center text-[#8D9BAF] p-6">
+            <div className="w-[120px] h-[120px] rounded-full flex items-center justify-center mb-6">
+              <Image
+                src="/images/empty1.png"
+                alt="Welcome"
+                loading="eager"
+                width={120}
+                height={120}
+                className="w-full h-full object-contain opacity-90"
+              />
             </div>
-            <h2 className="text-2xl font-bold text-zinc-200 mt-6 mb-2">
+            <h2 className="text-[22px] font-semibold text-white mb-2">
               Welcome to Aalap
             </h2>
-            <p className="max-w-sm text-center text-zinc-500 leading-relaxed">
-              Select a conversation from the sidebar to start messaging, or
-              search for a new contact through email to connect with.
+            <p className="max-w-[300px] text-center text-[15px] text-[#8D9BAF] leading-relaxed">
+              Select a conversation to start chatting, or find someone new to
+              connect with.
             </p>
           </div>
         )}
       </div>
 
+      {/* Chat Details Panel */}
       {activeChat && detailsOpen && (
         <ChatDetailsPanel onClose={() => setDetailsOpen(false)} />
       )}
 
+      {/* Mobile Tab Bar */}
       {!activeChat && (
         <MobileTabBar
           activeTab={mobileTab}
@@ -310,6 +319,7 @@ export default function MainChatDashboard() {
         />
       )}
 
+      {/* Dialogs */}
       <ProfileDialog
         open={profileOpen}
         onOpenChange={(open) => {
