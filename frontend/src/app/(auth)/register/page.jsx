@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -19,14 +20,39 @@ import LeftSidebar from "@/components/ui/LeftSidebar";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1); // 1 = Register, 2 = Verify OTP
+  const searchParams = useSearchParams();
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     password: "",
     otp: "",
   });
+
+  useEffect(() => {
+    const emailParam = searchParams.get("email");
+    const stepParam = searchParams.get("step");
+
+    if (emailParam) {
+      setFormData((prev) => ({ ...prev, email: emailParam }));
+    }
+    if (stepParam === "verify" && emailParam) {
+      setStep(2);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    let timerId;
+    if (resendTimer > 0) {
+      timerId = setInterval(() => {
+        setResendTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timerId);
+  }, [resendTimer]);
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -38,9 +64,19 @@ export default function RegisterPage() {
         password: formData.password,
       });
       toast.success("OTP sent to your email!");
-      setStep(2); // Switch to OTP View
+      setStep(2);
+      setResendTimer(60);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration failed");
+      const status = error.response?.status;
+      const message = error.response?.data?.message || "Registration failed";
+
+      if (status === 503) {
+        toast.warning(message);
+        setStep(2);
+        setResendTimer(60);
+      } else {
+        toast.error(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -60,6 +96,23 @@ export default function RegisterPage() {
       toast.error(error.response?.data?.message || "Invalid OTP");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendOTP = async () => {
+    if (!formData.email) return;
+
+    setIsResending(true);
+    try {
+      await axiosInstance.post("/auth/resend-otp", {
+        email: formData.email,
+      });
+      toast.success("A new verification code has been sent.");
+      setResendTimer(60);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to resend code");
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -139,9 +192,8 @@ export default function RegisterPage() {
                   <Label htmlFor="password" className="text-zinc-300">
                     Password
                   </Label>
-                  <Input
+                  <PasswordInput
                     id="password"
-                    type="password"
                     className="bg-zinc-950 border-zinc-700 focus-visible:ring-indigo-500 h-11 text-zinc-100 placeholder:text-zinc-500"
                     placeholder="Create a strong password"
                     value={formData.password}
@@ -214,17 +266,19 @@ export default function RegisterPage() {
                     }
                     required
                   />
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Didn't receive the code?{" "}
+                  <p className="text-xs text-zinc-500 mt-1 flex justify-between items-center">
+                    <span>Didn&apos;t receive the code?</span>
                     <button
                       type="button"
-                      className="text-indigo-400 hover:text-indigo-300 transition-colors"
-                      onClick={() => {
-                        toast.info("Resending OTP...");
-                        // Add resend OTP logic here
-                      }}
+                      className="text-indigo-400 hover:text-indigo-300 transition-colors disabled:text-zinc-600 disabled:cursor-not-allowed disabled:hover:text-zinc-600 font-medium"
+                      onClick={handleResendOTP}
+                      disabled={isResending || resendTimer > 0 || !formData.email}
                     >
-                      Resend
+                      {isResending
+                        ? "Sending..."
+                        : resendTimer > 0
+                          ? `Resend in ${resendTimer}s`
+                          : "Resend Code"}
                     </button>
                   </p>
                 </div>

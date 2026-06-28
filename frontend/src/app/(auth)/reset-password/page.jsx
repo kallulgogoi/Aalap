@@ -6,6 +6,7 @@ import Link from "next/link";
 import axiosInstance from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -153,9 +154,8 @@ export default function ResetPasswordPage() {
                 <Label htmlFor="newPassword" className="text-zinc-300">
                   New Password
                 </Label>
-                <Input
+                <PasswordInput
                   id="newPassword"
-                  type="password"
                   className="bg-zinc-950 border-zinc-700 focus-visible:ring-indigo-500 h-11 text-zinc-100 placeholder:text-zinc-500"
                   placeholder="Enter new password"
                   value={formData.newPassword}

@@ -6,6 +6,7 @@ const redisClient = require("../config/redis");
 
 const {
   register,
+  resendOTP,
   verifyOTP,
   login,
   forgotPassword,
@@ -29,6 +30,7 @@ const authLimiter = rateLimit({
 });
 
 router.post("/register", authLimiter, register);
+router.post("/resend-otp", authLimiter, resendOTP);
 router.post("/verify-otp", authLimiter, verifyOTP);
 router.post("/login", authLimiter, login);
 

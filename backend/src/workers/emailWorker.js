@@ -1,8 +1,31 @@
 const { getChannel } = require("../config/rabbitmq");
 const {
-  sendOTPEmail,
   sendShadowInviteEmail,
+  getEmailTransport,
 } = require("../services/emailService");
+
+const MAX_EMAIL_RETRIES = 3;
+
+const getRetryCount = (msg) => msg.properties.headers?.["x-retry-count"] || 0;
+
+const requeueWithRetry = (channel, msg, queueName) => {
+  const retryCount = getRetryCount(msg) + 1;
+
+  if (retryCount > MAX_EMAIL_RETRIES) {
+    console.error(
+      `Dropping invite email after ${MAX_EMAIL_RETRIES} failed attempts:`,
+      msg.content.toString(),
+    );
+    channel.ack(msg);
+    return;
+  }
+
+  channel.sendToQueue(queueName, msg.content, {
+    persistent: true,
+    headers: { "x-retry-count": retryCount },
+  });
+  channel.ack(msg);
+};
 
 const startEmailWorkers = async () => {
   try {
@@ -10,26 +33,9 @@ const startEmailWorkers = async () => {
 
     channel.prefetch(10);
 
-    console.log("Email Worker started. Listening for tasks...");
+    console.log("Invite email worker started.");
+    console.log(`Email transport: ${getEmailTransport()}`);
 
-    // The OTP Queue
-    channel.consume("email_queue", async (msg) => {
-      if (msg !== null) {
-        try {
-          const payload = JSON.parse(msg.content.toString());
-          const { toEmail, otpCode } = payload;
-          await sendOTPEmail(toEmail, otpCode);
-
-          // Acknowledge the message so RabbitMQ removes it from the queue
-          channel.ack(msg);
-        } catch (error) {
-          console.error("OTP Worker Failed to process message:", error.message);
-          channel.nack(msg, false, true);
-        }
-      }
-    });
-
-    // The Shadow Invite Queue
     channel.consume("invite_queue", async (msg) => {
       if (msg !== null) {
         try {
@@ -44,7 +50,7 @@ const startEmailWorkers = async () => {
             "Invite Worker Failed to process message:",
             error.message,
           );
-          channel.nack(msg, false, true);
+          requeueWithRetry(channel, msg, "invite_queue");
         }
       }
     });

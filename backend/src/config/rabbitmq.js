@@ -19,7 +19,6 @@ const connectRabbitMQ = async () => {
 
     channel = await connection.createChannel();
 
-    await channel.assertQueue("email_queue", { durable: true });
     await channel.assertQueue("invite_queue", { durable: true });
     console.log("RabbitMQ Connected & Channels Asserted");
     return channel;

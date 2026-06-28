@@ -7,6 +7,7 @@ import axiosInstance from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import PasswordInput from "@/components/ui/PasswordInput";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -33,7 +34,13 @@ export default function LoginPage() {
       toast.success("Welcome back!");
       router.push("/");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Login failed");
+      const data = error.response?.data;
+      if (data?.needsVerification && data?.email) {
+        toast.info("Please verify your email to continue.");
+        router.push(`/register?email=${encodeURIComponent(data.email)}&step=verify`);
+        return;
+      }
+      toast.error(data?.message || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -105,9 +112,8 @@ export default function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input
+                <PasswordInput
                   id="password"
-                  type="password"
                   className="bg-zinc-950 border-zinc-700 focus-visible:ring-indigo-500 h-11 text-zinc-100 placeholder:text-zinc-500"
                   placeholder="Enter your password"
                   value={formData.password}
