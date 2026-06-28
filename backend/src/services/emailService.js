@@ -5,6 +5,13 @@ const smtpPort = parseInt(process.env.SMTP_PORT || "587", 10);
 const getEmailTransport = () => {
   const configured = process.env.EMAIL_TRANSPORT?.toLowerCase();
 
+  if (configured === "brevo") {
+    if (!process.env.BREVO_API_KEY) {
+      throw new Error("EMAIL_TRANSPORT=brevo but BREVO_API_KEY is not set.");
+    }
+    return "brevo";
+  }
+
   if (configured === "resend") {
     if (!process.env.RESEND_API_KEY) {
       throw new Error("EMAIL_TRANSPORT=resend but RESEND_API_KEY is not set.");
@@ -16,7 +23,6 @@ const getEmailTransport = () => {
     return "smtp";
   }
 
-  // auto: prefer Resend in production (HTTPS works on all cloud hosts)
   if (process.env.RESEND_API_KEY) {
     return "resend";
   }
@@ -25,7 +31,11 @@ const getEmailTransport = () => {
 };
 
 const createSmtpTransporter = () => {
-  if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
+  if (
+    !process.env.SMTP_HOST ||
+    !process.env.SMTP_USER ||
+    !process.env.SMTP_PASS
+  ) {
     throw new Error("SMTP credentials are not fully configured.");
   }
 
@@ -59,8 +69,37 @@ const getSmtpTransporter = () => {
   return smtpTransporter;
 };
 
+// NEW: Function to send via Brevo HTTP API
+const sendViaBrevoHTTP = async ({ toEmail, subject, html, fromName }) => {
+  const fromEmail = process.env.SMTP_FROM_EMAIL;
+  if (!fromEmail) {
+    throw new Error("SMTP_FROM_EMAIL is required.");
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": process.env.BREVO_API_KEY,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: toEmail }],
+      subject,
+      htmlContent: html,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.text();
+    throw new Error(`Brevo HTTP API error (${response.status}): ${errorBody}`);
+  }
+};
+
 const sendViaResend = async ({ toEmail, subject, html, fromName }) => {
-  const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.RESEND_FROM_EMAIL;
+  const fromEmail =
+    process.env.SMTP_FROM_EMAIL || process.env.RESEND_FROM_EMAIL;
   if (!fromEmail) {
     throw new Error("SMTP_FROM_EMAIL or RESEND_FROM_EMAIL is required.");
   }
@@ -102,6 +141,11 @@ const sendViaSmtp = async ({ toEmail, subject, html, fromName }) => {
 
 const sendEmail = async ({ toEmail, subject, html, fromName }) => {
   const transport = getEmailTransport();
+
+  if (transport === "brevo") {
+    await sendViaBrevoHTTP({ toEmail, subject, html, fromName });
+    return;
+  }
 
   if (transport === "resend") {
     await sendViaResend({ toEmail, subject, html, fromName });
