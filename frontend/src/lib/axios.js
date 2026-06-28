@@ -34,9 +34,14 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn("Session expired or invalid token. Logging out...");
-      useAuthStore.getState().logout();
-      if (typeof window !== "undefined") {
+      // Prevent the hard refresh if the user is already trying to log in or register
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.startsWith("/login") &&
+        !window.location.pathname.startsWith("/register")
+      ) {
+        console.warn("Session expired or invalid token. Logging out...");
+        useAuthStore.getState().logout();
         window.location.href = "/login";
       }
     }
@@ -44,5 +49,4 @@ axiosInstance.interceptors.response.use(
     return Promise.reject(error);
   },
 );
-
 export default axiosInstance;
