@@ -1,4 +1,3 @@
-````markdown
 # 💬 Aalap — Scalable Real-Time Chat Platform
 
 ![Next.js](https://img.shields.io/badge/Next.js-black?style=for-the-badge&logo=next.js&logoColor=white)
@@ -20,7 +19,7 @@ Aalap is a **highly scalable, event-driven real-time chat platform** built with 
 - **⚡ Real-Time Messaging:** Sub-50ms message delivery, typing indicators, and online/offline presence powered by **Socket.io** and **Redis Pub/Sub**.
 - **📨 Asynchronous Invitation System:** Uses **RabbitMQ** to process email invitations in the background, keeping the main server responsive.
 - **🔐 Secure Authentication:** OTP-based authentication using **Brevo Transactional Email** with **JWT** session management.
-- **👻 Ghost Chat Architecture:** Search users globally, start conversations instantly, or send invitations to unregistered email addresses.
+- **👻 Ghost Chat Architecture:** Search users globally by email, start conversations instantly, or send invitations to unregistered email addresses.
 - **🧹 Automated Resource Management:** Scheduled cleanup jobs using **node-cron** to optimize database performance.
 
 ---
@@ -28,7 +27,7 @@ Aalap is a **highly scalable, event-driven real-time chat platform** built with 
 ## 🛠️ Tech Stack
 
 ### Frontend
-- **Framework:** Next.js (React)
+- **Framework:** Next.js 
 - **State Management:** Zustand
 - **Offline Storage:** IndexedDB (Dexie.js)
 - **Styling:** Tailwind CSS + shadcn/ui
@@ -137,13 +136,15 @@ CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_cloudinary_api_key
 CLOUDINARY_API_SECRET=your_cloudinary_api_secret
 
-BREVO_API_KEY=your_brevo_api_key
+EMAIL_TRANSPORT=brevo
+BREVO_API_KEY=YOUR_brevo_api_key
+SMTP_FROM_EMAIL=your_registered_email_on_brevo
 ```
 
 Start the backend server:
 
 ```bash
-npm run dev
+npm start
 ```
 
 ---
@@ -167,9 +168,7 @@ npm install
 Create a `.env.local` file:
 
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:5000/api
-
-NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
 Start the frontend:
@@ -192,34 +191,6 @@ Your Aalap chat platform should now be running locally.
 
 ---
 
-# 📂 Project Structure
-
-```text
-Aalap
-│
-├── frontend
-│   ├── app
-│   ├── components
-│   ├── hooks
-│   ├── lib
-│   ├── store
-│   ├── public
-│   └── styles
-│
-├── backend
-│   ├── controllers
-│   ├── middleware
-│   ├── models
-│   ├── routes
-│   ├── services
-│   ├── sockets
-│   ├── workers
-│   └── utils
-│
-└── README.md
-```
-
----
 
 # 📈 Highlights
 
@@ -246,17 +217,5 @@ Contributions are welcome!
 
 ---
 
-# 📄 License
 
-This project is licensed under the **MIT License**.
-
----
-
-# 👨‍💻 Author
-
-**Kallul Gogoi**
-
-B.Tech CSE • National Institute of Technology Silchar
-
-⭐ If you found this project helpful, consider starring the repository!
 ````
