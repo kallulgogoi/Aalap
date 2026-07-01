@@ -17,7 +17,7 @@ const initSockets = (httpServer) => {
     pingTimeout: 60000,
   });
 
-  // Create dedicated pub/sub Redis clients for the adapter
+ 
   const pubClient = createRedisClient();
   const subClient = createRedisClient();
 
@@ -56,7 +56,6 @@ const initSockets = (httpServer) => {
       // Register presence in Redis
       await redisClient.set(`user:${socket.userId}`, socket.id);
 
-      // Broadcast online status to all active clients tracking presence
       socket.broadcast.emit("user_presence_change", {
         userId: socket.userId,
         status: "online",
@@ -64,12 +63,11 @@ const initSockets = (httpServer) => {
 
       registerChatHandlers(io, socket);
 
-      // clean disconnections
+
       socket.on("disconnect", async () => {
         console.log(`Socket disconnected: ${socket.id}`);
 
-        // Only remove from Redis if this socket is still the registered one
-        // (prevents a race condition with reconnects)
+        
         const currentSocketId = await redisClient.get(`user:${socket.userId}`);
         if (currentSocketId === socket.id) {
           await redisClient.del(`user:${socket.userId}`);
